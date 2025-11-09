@@ -26,6 +26,7 @@ add_executable(${PROJECT_NAME}
     src/helpers.cpp
     src/types.cpp
     src/Vertex.cpp
+    src/Editor.cpp
 )
 
 # Link libraries
@@ -60,4 +61,4 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 # Copy assets or shaders to build directory if needed
 # file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
-# file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders DESTINATION ${CMAKE_BINARY_DIR})
