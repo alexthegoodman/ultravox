@@ -25,48 +25,11 @@
 #include <ctime>
 #include <mutex>
 
+// include in desired order since not using .h files
+#include "Logger.cpp"
 #include "Vertex.cpp"
+#include "Voxel.cpp"
 #include "Editor.cpp"
-
-// Simple file logger
-class Logger {
-public:
-    static Logger& getInstance() {
-        static Logger instance;
-        return instance;
-    }
-
-    void log(const std::string& message) {
-        std::lock_guard<std::mutex> guard(logMutex);
-        if (logFile.is_open()) {
-            auto now = std::chrono::system_clock::now();
-            auto time = std::chrono::system_clock::to_time_t(now);
-            char timestamp[26];
-            ctime_s(timestamp, sizeof(timestamp), &time);
-            timestamp[24] = '\0'; // Remove newline
-            logFile << "[" << timestamp << "] " << message << std::endl;
-        }
-    }
-
-private:
-    Logger() {
-        logFile.open("ultravox.log", std::ios::out | std::ios::trunc);
-    }
-
-    ~Logger() {
-        if (logFile.is_open()) {
-            logFile.close();
-        }
-    }
-
-    Logger(const Logger&) = delete;
-    Logger& operator=(const Logger&) = delete;
-
-    std::ofstream logFile;
-    std::mutex logMutex;
-};
-
-#define LOG(message) Logger::getInstance().log(message)
 
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
@@ -838,7 +801,7 @@ private:
             throw std::runtime_error("Failed to acquire swap chain image!");
         }
 
-        updateUniformBuffer(currentFrame);
+        // updateUniformBuffer(currentFrame); // NOTE: spins the voxels (just for testing)
 
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
@@ -1231,6 +1194,9 @@ private:
 
     void mainLoop() {
         LOG("Entering main loop");
+
+        updateUniformBuffer(currentFrame);
+
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
 

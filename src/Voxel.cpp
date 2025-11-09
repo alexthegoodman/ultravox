@@ -5,15 +5,15 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-class Cube {
+class Voxel {
 public:
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
-    Cube(const glm::vec3& center, float size, const glm::vec4& color) {
+    Voxel(const glm::vec3& center, float size, const glm::vec4& color) {
         float halfSize = size / 2.0f;
 
-        // Define the 8 vertices of the cube
+        // Define the 8 vertices of the voxel
         glm::vec3 positions[8] = {
             {center.x - halfSize, center.y - halfSize, center.z + halfSize}, // 0: Front-bottom-left
             {center.x + halfSize, center.y - halfSize, center.z + halfSize}, // 1: Front-bottom-right
@@ -47,7 +47,7 @@ public:
         // Each face has 4 vertices
         unsigned int vertex_index = 0;
 
-        float object_type = (float)ObjectType::Cube;
+        float object_type = (float)ObjectType::Voxel;
         
         // Front face
         vertices.push_back({positions[0], texCoords[0], color, {0.0f, 0.0f}, object_type, normals[0]});

@@ -21,12 +21,15 @@ find_package(Jolt CONFIG REQUIRED)
 # Define your executable
 add_executable(${PROJECT_NAME}
     src/main.cpp
-    src/Camera3D.cpp
-    src/Cube.cpp
-    src/helpers.cpp
-    src/types.cpp
-    src/Vertex.cpp
-    src/Editor.cpp
+    # these will be included directly be include statements since not using .h files currently
+    # src/Camera3D.cpp
+    # src/Voxel.cpp
+    # src/helpers.cpp
+    # src/types.cpp
+    # src/Vertex.cpp
+    # src/Editor.cpp
+    # src/Octree.cpp
+    # src/Logger.cpp
 )
 
 # Link libraries
