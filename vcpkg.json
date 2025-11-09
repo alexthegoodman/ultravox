@@ -6,7 +6,10 @@
     "glfw3",
     "vulkan",
     "vulkan-memory-allocator",
-    "imgui",
+    {
+      "name": "imgui",
+      "features": ["glfw-binding", "vulkan-binding"]
+    },
     "imguizmo",
     "joltphysics"
   ]
