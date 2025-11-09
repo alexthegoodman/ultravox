@@ -1,3 +1,5 @@
+#define GLM_ENABLE_EXPERIMENTAL
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -10,7 +12,10 @@
 #include <vk_mem_alloc.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
+#include <glm/gtx/matrix_decompose.hpp>
 #include <imgui_impl_vulkan.h>
+#include <ImGuizmo.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
 #include <vector>
@@ -30,6 +35,7 @@
 #include "Vertex.cpp"
 #include "Voxel.cpp"
 #include "Editor.cpp"
+#include "Camera3D.cpp"
 
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
@@ -150,6 +156,7 @@ private:
     VkDescriptorPool imguiDescriptorPool;
 
     Editor editor;
+    Camera3D camera;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
     VkBuffer vertexBuffer;
@@ -887,12 +894,8 @@ private:
     void initializeUniformBuffers() {
         UniformBufferObject ubo{};
         ubo.model = glm::mat4(1.0f);
-        ubo.view  = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
-                                glm::vec3(0.0f, 0.0f, 0.0f),
-                                glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.proj  = glm::perspective(glm::radians(45.0f),
-                                    swapChainExtent.width / (float) swapChainExtent.height,
-                                    0.1f, 10.0f);
+        ubo.view  = camera.getView();
+        ubo.proj  = camera.getProjection(swapChainExtent.width / (float) swapChainExtent.height);
         ubo.proj[1][1] *= -1;
 
         for (size_t i = 0; i < uniformBuffersAllocations.size(); i++) {
@@ -911,8 +914,8 @@ private:
 
         UniformBufferObject ubo{};
         ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
+        ubo.view = camera.getView();
+        ubo.proj = camera.getProjection(swapChainExtent.width / (float) swapChainExtent.height);
         ubo.proj[1][1] *= -1;
 
         void* data;
@@ -1223,6 +1226,29 @@ private:
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
+            ImGuizmo::BeginFrame();
+
+            // Set ImGuizmo display size
+            ImGuizmo::SetRect(0, 0, (float)swapChainExtent.width, (float)swapChainExtent.height);
+
+            // Get camera matrices
+            glm::mat4 view = camera.getView();
+            glm::mat4 projection = camera.getProjection(swapChainExtent.width / (float)swapChainExtent.height);
+
+            // Manipulate view with ImGuizmo
+            glm::mat4 cameraMatrix = view; // ImGuizmo works with view matrix directly
+            ImGuizmo::ViewManipulate(glm::value_ptr(cameraMatrix), glm::value_ptr(projection), ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::LOCAL, glm::value_ptr(cameraMatrix), 80.0f, ImVec2(swapChainExtent.width - 128, 0), ImVec2(128, 128), 0x10101010);
+
+            // Update camera from manipulated matrix
+            glm::vec3 newPosition;
+            glm::quat newRotation;
+            glm::vec3 newScale;
+            glm::vec3 skew;
+            glm::vec4 perspective;
+            glm::decompose(cameraMatrix, newScale, newRotation, newPosition, skew, perspective);
+            camera.position3D = newPosition;
+            camera.rotation = newRotation;
+            camera.updateTarget();
 
             // Example ImGui window
             ImGui::Begin("Vulkan Engine");
