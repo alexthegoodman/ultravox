@@ -1,0 +1,13 @@
+{
+  "name": "ultravox",
+  "version": "1.0.0",
+  "dependencies": [
+    "glm",
+    "glfw3",
+    "vulkan",
+    "vulkan-memory-allocator",
+    "imgui",
+    "imguizmo",
+    "joltphysics"
+  ]
+}
