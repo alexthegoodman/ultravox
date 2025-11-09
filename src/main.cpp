@@ -1,5 +1,9 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h" 
+
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -14,6 +18,7 @@
 #include <cstdlib>
 #include <optional>
 #include <set>
+#include <algorithm>
 
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
