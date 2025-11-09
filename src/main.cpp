@@ -19,6 +19,51 @@
 #include <optional>
 #include <set>
 #include <algorithm>
+#include <fstream>
+#include <string>
+#include <chrono>
+#include <ctime>
+#include <mutex>
+
+// Simple file logger
+class Logger {
+public:
+    static Logger& getInstance() {
+        static Logger instance;
+        return instance;
+    }
+
+    void log(const std::string& message) {
+        std::lock_guard<std::mutex> guard(logMutex);
+        if (logFile.is_open()) {
+            auto now = std::chrono::system_clock::now();
+            auto time = std::chrono::system_clock::to_time_t(now);
+            char timestamp[26];
+            ctime_s(timestamp, sizeof(timestamp), &time);
+            timestamp[24] = '\0'; // Remove newline
+            logFile << "[" << timestamp << "] " << message << std::endl;
+        }
+    }
+
+private:
+    Logger() {
+        logFile.open("ultravox.log", std::ios::out | std::ios::trunc);
+    }
+
+    ~Logger() {
+        if (logFile.is_open()) {
+            logFile.close();
+        }
+    }
+
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
+
+    std::ofstream logFile;
+    std::mutex logMutex;
+};
+
+#define LOG(message) Logger::getInstance().log(message)
 
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
@@ -56,11 +101,13 @@ struct SwapChainSupportDetails {
 class VulkanEngine {
 public:
     void run() {
+        LOG("Starting VulkanEngine");
         initWindow();
         initVulkan();
         initImGui();
         mainLoop();
         cleanup();
+        LOG("VulkanEngine finished");
     }
 
 private:
@@ -90,11 +137,13 @@ private:
     VkDescriptorPool imguiDescriptorPool;
 
     void initWindow() {
+        LOG("Initializing window");
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan Engine", nullptr, nullptr);
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+        LOG("Window initialized");
     }
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -103,6 +152,7 @@ private:
     }
 
     void initVulkan() {
+        LOG("Initializing Vulkan");
         createInstance();
         createSurface();
         pickPhysicalDevice();
@@ -115,6 +165,7 @@ private:
         createCommandBuffers();
         createSyncObjects();
         createAllocator();
+        LOG("Vulkan initialized");
     }
 
     void createInstance() {
@@ -543,6 +594,7 @@ private:
     }
 
     void initImGui() {
+        LOG("Initializing ImGui");
         // Create descriptor pool for ImGui
         VkDescriptorPoolSize pool_sizes[] = {
             { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
@@ -606,6 +658,7 @@ private:
         endSingleTimeCommands(command_buffer);
         // ImGui_ImplVulkan_DestroyFontUploadObjects();
         // ImGui_ImplVulkan_DestroyFontsTexture(); // needed?
+        LOG("ImGui initialized");
     }
 
     VkCommandBuffer beginSingleTimeCommands() {
@@ -763,6 +816,7 @@ private:
     }
 
     void mainLoop() {
+        LOG("Entering main loop");
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
 
@@ -791,11 +845,13 @@ private:
 
             drawFrame();
         }
+        LOG("Exiting main loop");
 
         vkDeviceWaitIdle(device);
     }
 
     void cleanup() {
+        LOG("Starting cleanup");
         cleanupSwapChain();
 
         // Cleanup ImGui
@@ -824,18 +880,22 @@ private:
 
         glfwDestroyWindow(window);
         glfwTerminate();
+        LOG("Cleanup finished");
     }
 };
 
 int main() {
+    LOG("Application starting");
     VulkanEngine app;
 
     try {
         app.run();
     } catch (const std::exception& e) {
+        LOG("Exception caught: " + std::string(e.what()));
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 
+    LOG("Application finished successfully");
     return EXIT_SUCCESS;
 }
