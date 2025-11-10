@@ -119,6 +119,11 @@ public:
         return glm::vec3(v.GetX(), v.GetY(), v.GetZ());
     }
 
+    // Helper to convert JPH::Vec3 to glm::vec3
+    static glm::vec3 toGLMVec3(const Vector3& v) {
+        return glm::vec3(v.x, v.y, v.z);
+    }
+
 private:
     JPH::TempAllocator* tempAllocator;
     JPH::JobSystemThreadPool* jobSystem;

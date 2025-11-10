@@ -2,17 +2,18 @@
 #include "Logger.h"
 
 // Callback for asserts, where we can choose to break or not
-static void TraceImpl(const char *inFMT, ...) {
-    // Format the message
-    va_list list;
-    va_start(list, inFMT);
-    char buffer[1024];
-    vsnprintf(buffer, sizeof(buffer), inFMT, list);
-    va_end(list);
+// NOTE: I DO NOT want logs for physics bodies!
+// static void TraceImpl(const char *inFMT, ...) {
+//     // Format the message
+//     va_list list;
+//     va_start(list, inFMT);
+//     char buffer[1024];
+//     vsnprintf(buffer, sizeof(buffer), inFMT, list);
+//     va_end(list);
 
-    // Output to the VS output pane
-    LOG(std::string("JoltPhysics: ") + buffer);
-}
+//     // Output to the VS output pane
+//     LOG(std::string("JoltPhysics: ") + buffer);
+// }
 
 #ifdef JPH_ENABLE_ASSERTS
 // Callback for asserts, where we can choose to break or not
@@ -37,13 +38,14 @@ void PhysicsSystem::init() {
     LOG("Initializing Jolt Physics");
 
     // Register allocation hook
-    JPH::Allocate = JPH::DefaultAllocate;
-    JPH::Free = JPH::DefaultFree;
-    JPH::AlignedAllocate = JPH::DefaultAlignedAllocate;
-    JPH::AlignedFree = JPH::DefaultAlignedFree;
+    // NOTE: are these necessary? cause JPH::DefaultAllocate does not exist, neither do the others
+    // JPH::Allocate = JPH::DefaultAllocate;
+    // JPH::Free = JPH::DefaultFree;
+    // JPH::AlignedAllocate = JPH::DefaultAlignedAllocate;
+    // JPH::AlignedFree = JPH::DefaultAlignedFree;
 
     // Install callbacks
-    JPH::Trace = TraceImpl;
+    // JPH::Trace = TraceImpl;
 #ifdef JPH_ENABLE_ASSERTS
     JPH::AssertFailed = AssertFailedImpl;
 #endif // JPH_ENABLE_ASSERTS
@@ -118,13 +120,19 @@ JPH::BodyID PhysicsSystem::createBoxBody(const glm::vec3& position, const glm::v
         return JPH::BodyID();
     }
 
-    // Create a box shape
-    JPH::BoxShapeSettings boxShapeSettings(toJPHVec3(halfExtent));
-    JPH::ShapeSettings::ShapeResult shapeResult = boxShapeSettings.Create();
-    if (shapeResult.HasFailed()) {
-        LOG("Failed to create box shape: " + std::string(shapeResult.GetError().c_str()));
-        return JPH::BodyID();
-    }
+        // Create a box shape
+
+        JPH::BoxShapeSettings boxShapeSettings(toJPHVec3(halfExtent));
+
+        JPH::ShapeSettings::ShapeResult shapeResult = boxShapeSettings.Create();
+
+        if (shapeResult.HasError()) {
+
+            LOG("Failed to create box shape: " + std::string(shapeResult.GetError().c_str()));
+
+            return JPH::BodyID();
+
+        }
     JPH::ShapeRefC boxShape = shapeResult.Get();
 
     // Create the body
@@ -139,7 +147,7 @@ JPH::BodyID PhysicsSystem::createBoxBody(const glm::vec3& position, const glm::v
 }
 
 void PhysicsSystem::destroyBody(JPH::BodyID bodyID) {
-    if (physicsSystem && bodyID.IsValid()) {
+    if (physicsSystem && !bodyID.IsInvalid()) {
         physicsSystem->GetBodyInterface().RemoveBody(bodyID);
         physicsSystem->GetBodyInterface().DestroyBody(bodyID);
     }

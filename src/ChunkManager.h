@@ -28,6 +28,8 @@ namespace std {
 
 class ChunkManager {
 public:
+    Octree<Chunk::PhysicsVoxelData> physicsOctree; 
+
     ChunkManager(const std::string& worldPath = "world_data") 
         : worldDataPath(worldPath),
           loadRadius(3),
@@ -351,18 +353,12 @@ public:
     
 
 private:
-
     std::unordered_map<Chunk::ChunkCoord, std::unique_ptr<Chunk>> loadedChunks;
-
     std::unordered_set<Chunk::ChunkCoord> modifiedChunks;
-
     std::string worldDataPath;
-
     int loadRadius;
-
     int unloadRadius;
-
-    Octree<Chunk::PhysicsVoxelData> physicsOctree; // Corrected: Declared as a member variable    
+   
     // Convert world position to chunk coordinate
     Chunk::ChunkCoord worldToChunkCoord(const glm::vec3& worldPos) const {
         return Chunk::ChunkCoord{

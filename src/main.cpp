@@ -1306,7 +1306,7 @@ private:
                         JPH::EMotionType::Static, // Voxels are static
                         ObjectLayer::NON_MOVING
                     );
-                    if (newBodyID.IsValid()) {
+                    if (!newBodyID.IsInvalid()) {
                         activePhysicsBodies[PhysicsSystem::toGLMVec3(octreeData.position)] = newBodyID;
                     }
                 }
