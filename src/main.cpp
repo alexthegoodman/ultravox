@@ -1328,8 +1328,8 @@ private:
             camera.setPitch(currentPitch);
             camera.setYaw(currentYaw);
 
-            ImGui::SliderFloat("Pan X", &panX, -1.0f, 1.0f);
-            ImGui::SliderFloat("Pan Y", &panY, -1.0f, 1.0f);
+            ImGui::SliderFloat("Pan X", &panX, -3.0f, 3.0f);
+            ImGui::SliderFloat("Pan Y", &panY, -3.0f, 3.0f);
             if (panX != 0.0f || panY != 0.0f) {
                 camera.pan(panX, panY);
                 panX = 0.0f; // Reset for incremental panning

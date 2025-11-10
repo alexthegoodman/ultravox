@@ -192,7 +192,7 @@ public:
             for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
                 // Just place a single voxel at y=0
                 // glm::vec4 color(0.3f, 0.6f, 0.2f, 1.0f); // Green grass color
-                float colorVariation = static_cast<float>(z) / Chunk::CHUNK_SIZE;
+                float colorVariation = static_cast<float>(z + x) / Chunk::CHUNK_SIZE;
                 glm::vec4 color(0.3f + colorVariation * 0.5f, 0.6f, 0.2f, 1.0f);
                 chunk->setVoxel(x, 0, z, Chunk::VoxelData(color, 1));
             }

@@ -28,7 +28,7 @@ public:
     float resetZ;
 
     Camera3D()
-        : position3D(0.0f, 0.0f, 5.0f),
+        : position3D(0.0f, 2.0f, 5.0f),
           rotation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f)),
           up(0.0f, 1.0f, 0.0f),
           target(0.0f, 0.0f, -1.0f),

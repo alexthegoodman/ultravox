@@ -118,12 +118,19 @@ public:
                     glm::vec3 pos = worldPos + glm::vec3(x, y, z) * VOXEL_SIZE;
                     
                     // Check each face
-                    if (!isSolid(x, y + 1, z)) addFace(pos, voxel.color, 0); // Top
-                    if (!isSolid(x, y - 1, z)) addFace(pos, voxel.color, 1); // Bottom
-                    if (!isSolid(x + 1, y, z)) addFace(pos, voxel.color, 2); // Right
-                    if (!isSolid(x - 1, y, z)) addFace(pos, voxel.color, 3); // Left
-                    if (!isSolid(x, y, z + 1)) addFace(pos, voxel.color, 4); // Front
-                    if (!isSolid(x, y, z - 1)) addFace(pos, voxel.color, 5); // Back
+                    // if (!isSolid(x, y + 1, z)) addFace(pos, voxel.color, 0); // Top
+                    // if (!isSolid(x, y - 1, z)) addFace(pos, voxel.color, 1); // Bottom
+                    // if (!isSolid(x + 1, y, z)) addFace(pos, voxel.color, 2); // Right
+                    // if (!isSolid(x - 1, y, z)) addFace(pos, voxel.color, 3); // Left
+                    // if (!isSolid(x, y, z + 1)) addFace(pos, voxel.color, 4); // Front
+                    // if (!isSolid(x, y, z - 1)) addFace(pos, voxel.color, 5); // Back
+
+                    addFace(pos, voxel.color, 0); // Top
+                    addFace(pos, voxel.color, 1); // Bottom
+                    addFace(pos, voxel.color, 2); // Right
+                    addFace(pos, voxel.color, 3); // Left
+                    addFace(pos, voxel.color, 4); // Front
+                    addFace(pos, voxel.color, 5); // Back
                 }
             }
         }
@@ -225,15 +232,6 @@ private:
                 normal = glm::vec3(0, 0, -1);
                 break;
         }
-        
-        // Add vertices (assuming Vertex has position, normal, color)
-        // for (int i = 0; i < 4; ++i) {
-        //     Vertex v;
-        //     v.position = vertices[i];
-        //     v.normal = normal;
-        //     v.color = color;
-        //     vertexCache.push_back(v);
-        // }
 
         for (int i = 0; i < 4; ++i) {
             Vertex v;
