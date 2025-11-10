@@ -421,11 +421,13 @@ private:
                     }
                 }
             }
-        } else {
-            // Generate new terrain for this chunk (which also populates the octree)
-            generateTerrain(chunk.get());
-            LOG("Generated new chunk: " + filePath);
-        }
+        } 
+        // we dont want this, we are not doing infinite worlds, just loading from disk
+        // else {
+        //     // Generate new terrain for this chunk (which also populates the octree)
+        //     generateTerrain(chunk.get());
+        //     LOG("Generated new chunk: " + filePath);
+        // }
         
         Chunk* ptr = chunk.get();
         loadedChunks[coord] = std::move(chunk);

@@ -35,7 +35,7 @@ PhysicsSystem::~PhysicsSystem() {
 }
 
 void PhysicsSystem::init() {
-    LOG("Initializing Jolt Physics");
+    LOG("Initializing Jolt Physics... 1");
 
     // Register allocation hook
     // NOTE: are these necessary? cause JPH::DefaultAllocate does not exist, neither do the others
@@ -50,22 +50,38 @@ void PhysicsSystem::init() {
     JPH::AssertFailed = AssertFailedImpl;
 #endif // JPH_ENABLE_ASSERTS
 
+    LOG("Initializing Jolt Physics... 2");
+
+    JPH::RegisterDefaultAllocator();
+
+    LOG("Initializing Jolt Physics... 2a");
+
     // Create a factory
     JPH::Factory::sInstance = new JPH::Factory();
+
+    LOG("Initializing Jolt Physics... a");
 
     // Register all Jolt physics types
     JPH::RegisterTypes();
 
+    LOG("Initializing Jolt Physics... b");
+
     // We need a temp allocator for temporary allocations during the physics update. We're using a fixed size allocator.
     tempAllocator = new JPH::TempAllocatorMalloc();
+
+    LOG("Initializing Jolt Physics... c");
 
     // We need a job system that will execute physics jobs on multiple threads.
     // We use the default implementation for the job system.
     jobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
 
+    LOG("Initializing Jolt Physics... d");
+
     // Create the physics system
     physicsSystem = new JPH::PhysicsSystem();
     physicsSystem->Init(1024, 0, 1024, 1024, broadPhaseLayerInterface, objectVsBroadphaseLayerFilter, objectVsObjectLayerFilter);
+
+    LOG("Initializing Jolt Physics... 3");
 
     // A body activation listener gets notified when bodies activate and deactivate
     physicsSystem->SetBodyActivationListener(&bodyActivationListener);
