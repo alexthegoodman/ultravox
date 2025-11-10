@@ -227,11 +227,22 @@ private:
         }
         
         // Add vertices (assuming Vertex has position, normal, color)
+        // for (int i = 0; i < 4; ++i) {
+        //     Vertex v;
+        //     v.position = vertices[i];
+        //     v.normal = normal;
+        //     v.color = color;
+        //     vertexCache.push_back(v);
+        // }
+
         for (int i = 0; i < 4; ++i) {
             Vertex v;
             v.position = vertices[i];
-            v.normal = normal;
+            v.texCoords = glm::vec2(0.0f);      // Initialize (or use proper UVs)
             v.color = color;
+            v.gradientCoords = glm::vec2(0.0f); // Initialize
+            v.objectType = 6.0f;                // 6 = solid voxel
+            v.normal = normal;
             vertexCache.push_back(v);
         }
         

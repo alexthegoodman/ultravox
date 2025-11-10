@@ -152,30 +152,49 @@ public:
     }
     
     // Generate terrain for a chunk (example implementation)
+    // void generateTerrain(Chunk* chunk) {
+    //     const Chunk::ChunkCoord& coord = chunk->getCoordinate();
+    //     glm::vec3 worldPos = chunk->getWorldPosition();
+        
+    //     // Simple terrain generation - flat ground at y=0
+    //     for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
+    //         for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
+    //             float worldX = worldPos.x + x * Chunk::VOXEL_SIZE;
+    //             float worldZ = worldPos.z + z * Chunk::VOXEL_SIZE;
+                
+    //             // Simple height variation
+    //             int height = static_cast<int>(5 + 3 * sin(worldX * 0.1f) * cos(worldZ * 0.1f));
+                
+    //             for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
+    //                 float worldY = worldPos.y + y * Chunk::VOXEL_SIZE;
+                    
+    //                 if (worldY < height) {
+    //                     // Vary color based on height
+    //                     float colorVariation = static_cast<float>(y) / Chunk::CHUNK_SIZE;
+    //                     glm::vec4 color(0.3f + colorVariation * 0.5f, 0.6f, 0.2f, 1.0f);
+                        
+    //                     chunk->setVoxel(x, y, z, Chunk::VoxelData(color, 1));
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
     void generateTerrain(Chunk* chunk) {
         const Chunk::ChunkCoord& coord = chunk->getCoordinate();
         glm::vec3 worldPos = chunk->getWorldPosition();
         
-        // Simple terrain generation - flat ground at y=0
+        // Only generate terrain for chunks that touch y=0
+        if (coord.y != 0) return;
+        
+        // Simple flat terrain at y=0
         for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
             for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
-                float worldX = worldPos.x + x * Chunk::VOXEL_SIZE;
-                float worldZ = worldPos.z + z * Chunk::VOXEL_SIZE;
-                
-                // Simple height variation
-                int height = static_cast<int>(5 + 3 * sin(worldX * 0.1f) * cos(worldZ * 0.1f));
-                
-                for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
-                    float worldY = worldPos.y + y * Chunk::VOXEL_SIZE;
-                    
-                    if (worldY < height) {
-                        // Vary color based on height
-                        float colorVariation = static_cast<float>(y) / Chunk::CHUNK_SIZE;
-                        glm::vec4 color(0.3f + colorVariation * 0.5f, 0.6f, 0.2f, 1.0f);
-                        
-                        chunk->setVoxel(x, y, z, Chunk::VoxelData(color, 1));
-                    }
-                }
+                // Just place a single voxel at y=0
+                // glm::vec4 color(0.3f, 0.6f, 0.2f, 1.0f); // Green grass color
+                float colorVariation = static_cast<float>(z) / Chunk::CHUNK_SIZE;
+                glm::vec4 color(0.3f + colorVariation * 0.5f, 0.6f, 0.2f, 1.0f);
+                chunk->setVoxel(x, 0, z, Chunk::VoxelData(color, 1));
             }
         }
     }
