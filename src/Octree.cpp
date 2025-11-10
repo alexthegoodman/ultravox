@@ -70,6 +70,13 @@ struct OctreeStats {
 template <typename T>
 class Octree {
 public:
+    // Default constructor with a large default bounding box
+    explicit Octree()
+        : root(std::make_unique<OctreeNode<T>>(BoundingBox({-100000.0f, -100000.0f, -100000.0f}, {100000.0f, 100000.0f, 100000.0f}))),
+          maxItems(8),
+          maxDepth(8),
+          itemCount(0) {}
+
     explicit Octree(const BoundingBox& bounds, int maxItems = 8, int maxDepth = 8)
         : root(std::make_unique<OctreeNode<T>>(bounds)),
           maxItems(maxItems),

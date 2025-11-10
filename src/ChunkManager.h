@@ -32,7 +32,7 @@ public:
         : worldDataPath(worldPath),
           loadRadius(3),
           unloadRadius(5),
-          physicsOctree(BoundingBox({-10000.0f, -10000.0f, -10000.0f}, {10000.0f, 10000.0f, 10000.0f})) { // Initialize Octree with a large enough bounds
+          physicsOctree() { // Initialize Octree with a large enough bounds
         // Create world data directory if it doesn't exist
         std::filesystem::create_directories(worldDataPath);
         LOG("ChunkManager initialized with path: " + worldDataPath);
@@ -348,13 +348,21 @@ public:
     // Get the radius (not in world units, but in number of chunks)
     int getUnloadRadius() const { return unloadRadius; }
 
-private:
-    std::unordered_map<Chunk::ChunkCoord, std::unique_ptr<Chunk>> loadedChunks;
-    std::unordered_set<Chunk::ChunkCoord> modifiedChunks;
-    std::string worldDataPath;
-    int loadRadius;
-    int unloadRadius;
     
+
+private:
+
+    std::unordered_map<Chunk::ChunkCoord, std::unique_ptr<Chunk>> loadedChunks;
+
+    std::unordered_set<Chunk::ChunkCoord> modifiedChunks;
+
+    std::string worldDataPath;
+
+    int loadRadius;
+
+    int unloadRadius;
+
+    Octree<Chunk::PhysicsVoxelData> physicsOctree; // Corrected: Declared as a member variable    
     // Convert world position to chunk coordinate
     Chunk::ChunkCoord worldToChunkCoord(const glm::vec3& worldPos) const {
         return Chunk::ChunkCoord{

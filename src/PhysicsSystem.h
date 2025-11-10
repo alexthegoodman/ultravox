@@ -56,7 +56,7 @@ public:
 /// Class that helps determine if two broadphase layers can collide
 class BPLayerOverrideImpl : public JPH::BroadPhaseLayerFilter {
 public:
-    virtual bool ShouldCollide(JPH::BroadPhaseLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override {
+    virtual bool ShouldCollide(JPH::BroadPhaseLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const {
         if (inLayer1 == BroadPhaseLayer::NON_MOVING)
             return inLayer2 == BroadPhaseLayer::MOVING;
         return true;
