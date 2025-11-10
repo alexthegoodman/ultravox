@@ -30,6 +30,9 @@
 #include <ctime>
 #include <mutex>
 
+#include <unordered_map>
+#include <utility>
+
 // include in desired order since not using .h files
 #include "Logger.cpp"
 #include "Vertex.h"
@@ -161,16 +164,22 @@ private:
     Camera3D camera;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
-    VkBuffer vertexBuffer;
-    VmaAllocation vertexBufferAllocation;
-    VkBuffer indexBuffer;
-    VmaAllocation indexBufferAllocation;
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VmaAllocation> uniformBuffersAllocations;
     VkDescriptorSetLayout descriptorSetLayout;
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
 
+    // Chunk rendering data
+    std::unordered_map<Chunk::ChunkCoord, std::pair<VkBuffer, VmaAllocation>> chunkVertexBuffers;
+    std::unordered_map<Chunk::ChunkCoord, std::pair<VkBuffer, VmaAllocation>> chunkIndexBuffers;
+
+    // void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage, VkBuffer& buffer, VmaAllocation& allocation);
+    // void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+    // void createChunkBuffers(const Chunk::ChunkCoord& coord, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+    // void updateChunkBuffers(const Chunk::ChunkCoord& coord, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+    // void destroyChunkBuffers(const Chunk::ChunkCoord& coord);
 
     void initWindow() {
         LOG("Initializing window");
@@ -202,15 +211,16 @@ private:
         createSyncObjects();
         createAllocator();
 
+        LOG("Continuing Vulkan Initialization...");
+
         createDescriptorSetLayout();
         createGraphicsPipeline();
-        createVertexBuffer();
-        createIndexBuffer();
         createUniformBuffers();
         createDescriptorPool();
         createDescriptorSets();
 
-        LOG("Vulkan initialized");
+
+        LOG("Vulkan initialized!");
     }
 
     void createInstance() {
@@ -777,15 +787,31 @@ private:
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-        VkBuffer vertexBuffers[] = {vertexBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(editor.getIndices().size()), 1, 0, 0, 0);
+        // Render all loaded chunks
+        for (const auto& pair : editor.chunkManager.getLoadedChunks()) {
+            const Chunk::ChunkCoord& coord = pair.first;
+            const std::unique_ptr<Chunk>& chunk = pair.second;
+
+            if (!chunk->empty()) {
+                // Ensure buffers exist and are up-to-date
+                if (chunk->isDirty() || chunkVertexBuffers.find(coord) == chunkVertexBuffers.end()) {
+                    updateChunkBuffers(coord, chunk->getVertices(), chunk->getIndices());
+                }
+
+                // Bind vertex buffer
+                VkBuffer vertexBuffers[] = {chunkVertexBuffers[coord].first};
+                VkDeviceSize offsets[] = {0};
+                vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+                // Bind index buffer
+                vkCmdBindIndexBuffer(commandBuffer, chunkIndexBuffers[coord].first, 0, VK_INDEX_TYPE_UINT32);
+
+                // Draw
+                vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(chunk->getIndices().size()), 1, 0, 0, 0);
+            }
+        }
 
         // Render ImGui
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
@@ -1063,46 +1089,6 @@ private:
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
     }
 
-    void createVertexBuffer() {
-        const std::vector<Vertex>& vertices = editor.getVertices();
-        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-        VkBuffer stagingBuffer;
-        VmaAllocation stagingBufferAllocation;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, stagingBuffer, stagingBufferAllocation);
-
-        void* data;
-        vmaMapMemory(allocator, stagingBufferAllocation, &data);
-        memcpy(data, vertices.data(), (size_t) bufferSize);
-        vmaUnmapMemory(allocator, stagingBufferAllocation);
-
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, vertexBuffer, vertexBufferAllocation);
-
-        copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-        vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
-    }
-
-    void createIndexBuffer() {
-        const std::vector<uint32_t>& indices = editor.getIndices();
-        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-        VkBuffer stagingBuffer;
-        VmaAllocation stagingBufferAllocation;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, stagingBuffer, stagingBufferAllocation);
-
-        void* data;
-        vmaMapMemory(allocator, stagingBufferAllocation, &data);
-        memcpy(data, indices.data(), (size_t) bufferSize);
-        vmaUnmapMemory(allocator, stagingBufferAllocation);
-
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, indexBuffer, indexBufferAllocation);
-
-        copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-        vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
-    }
-
     void createUniformBuffers() {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -1185,6 +1171,63 @@ private:
         endSingleTimeCommands(commandBuffer);
     }
 
+    void createChunkBuffers(const Chunk::ChunkCoord& coord, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
+        // Create vertex buffer
+        VkDeviceSize vertexBufferSize = sizeof(vertices[0]) * vertices.size();
+        VkBuffer vertexStagingBuffer;
+        VmaAllocation vertexStagingBufferAllocation;
+        createBuffer(vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, vertexStagingBuffer, vertexStagingBufferAllocation);
+        void* vertexData;
+        vmaMapMemory(allocator, vertexStagingBufferAllocation, &vertexData);
+        memcpy(vertexData, vertices.data(), (size_t) vertexBufferSize);
+        vmaUnmapMemory(allocator, vertexStagingBufferAllocation);
+
+        VkBuffer vertexBuffer;
+        VmaAllocation vertexBufferAllocation;
+        createBuffer(vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, vertexBuffer, vertexBufferAllocation);
+        copyBuffer(vertexStagingBuffer, vertexBuffer, vertexBufferSize);
+        vmaDestroyBuffer(allocator, vertexStagingBuffer, vertexStagingBufferAllocation);
+        chunkVertexBuffers[coord] = {vertexBuffer, vertexBufferAllocation};
+
+        // Create index buffer
+        VkDeviceSize indexBufferSize = sizeof(indices[0]) * indices.size();
+        VkBuffer indexStagingBuffer;
+        VmaAllocation indexStagingBufferAllocation;
+        createBuffer(indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, indexStagingBuffer, indexStagingBufferAllocation);
+        void* indexData;
+        vmaMapMemory(allocator, indexStagingBufferAllocation, &indexData);
+        memcpy(indexData, indices.data(), (size_t) indexBufferSize);
+        vmaUnmapMemory(allocator, indexStagingBufferAllocation);
+
+        VkBuffer indexBuffer;
+        VmaAllocation indexBufferAllocation;
+        createBuffer(indexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, indexBuffer, indexBufferAllocation);
+        copyBuffer(indexStagingBuffer, indexBuffer, indexBufferSize);
+        vmaDestroyBuffer(allocator, indexStagingBuffer, indexStagingBufferAllocation);
+        chunkIndexBuffers[coord] = {indexBuffer, indexBufferAllocation};
+    }
+
+    void updateChunkBuffers(const Chunk::ChunkCoord& coord, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
+        // Destroy existing buffers
+        destroyChunkBuffers(coord);
+        // Recreate buffers with new data
+        createChunkBuffers(coord, vertices, indices);
+    }
+
+    void destroyChunkBuffers(const Chunk::ChunkCoord& coord) {
+        auto vertexIt = chunkVertexBuffers.find(coord);
+        if (vertexIt != chunkVertexBuffers.end()) {
+            vmaDestroyBuffer(allocator, vertexIt->second.first, vertexIt->second.second);
+            chunkVertexBuffers.erase(vertexIt);
+        }
+
+        auto indexIt = chunkIndexBuffers.find(coord);
+        if (indexIt != chunkIndexBuffers.end()) {
+            vmaDestroyBuffer(allocator, indexIt->second.first, indexIt->second.second);
+            chunkIndexBuffers.erase(indexIt);
+        }
+    }
+
     static std::vector<char> readFile(const std::string& filename) {
         std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -1224,6 +1267,10 @@ private:
 
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
+
+            // Update chunk manager
+            editor.chunkManager.updateLoadedChunks(camera.position3D);
+            editor.chunkManager.rebuildDirtyChunks();
 
             // Start ImGui frame
             ImGui_ImplVulkan_NewFrame();
@@ -1313,6 +1360,14 @@ private:
 
         // editor.chunkManager.saveAllChunks(); ? or perhaps autosave is more appropriate
 
+        // Destroy all chunk buffers
+        for (auto const& [coord, bufferPair] : chunkVertexBuffers) {
+            vmaDestroyBuffer(allocator, bufferPair.first, bufferPair.second);
+        }
+        for (auto const& [coord, bufferPair] : chunkIndexBuffers) {
+            vmaDestroyBuffer(allocator, bufferPair.first, bufferPair.second);
+        }
+
         cleanupSwapChain();
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -1321,9 +1376,6 @@ private:
 
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-
-        vmaDestroyBuffer(allocator, indexBuffer, indexBufferAllocation);
-        vmaDestroyBuffer(allocator, vertexBuffer, vertexBufferAllocation);
 
         // Cleanup ImGui
         ImGui_ImplVulkan_Shutdown();

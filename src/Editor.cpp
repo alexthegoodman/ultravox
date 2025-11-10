@@ -11,8 +11,8 @@ public:
     // std::vector<Voxel> voxels;
     
     // Combined mesh data
-    std::vector<Vertex> vertexCache;
-    std::vector<uint32_t> indiceCache;
+    // std::vector<Vertex> vertexCache;
+    // std::vector<uint32_t> indiceCache;
 
     ChunkManager chunkManager;
 
@@ -23,11 +23,11 @@ public:
         chunkManager.setUnloadRadius(8); // Unload beyond 8 chunk radius
     }
 
-    const std::vector<Vertex>& getVertices() const {
-        return vertexCache;
-    }
+    // const std::vector<Vertex>& getVertices() const {
+    //     return vertexCache;
+    // }
 
-    const std::vector<uint32_t>& getIndices() const {
-        return indiceCache;
-    }
+    // const std::vector<uint32_t>& getIndices() const {
+    //     return indiceCache;
+    // }
 };
