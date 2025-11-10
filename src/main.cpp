@@ -174,6 +174,12 @@ private:
     std::unordered_map<Chunk::ChunkCoord, std::pair<VkBuffer, VmaAllocation>> chunkVertexBuffers;
     std::unordered_map<Chunk::ChunkCoord, std::pair<VkBuffer, VmaAllocation>> chunkIndexBuffers;
 
+    // Camera control variables for ImGui
+    float currentPitch = 0.0f;
+    float currentYaw = 0.0f;
+    float panX = 0.0f;
+    float panY = 0.0f;
+
     // void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage, VkBuffer& buffer, VmaAllocation& allocation);
     // void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
@@ -1290,18 +1296,6 @@ private:
 
             // ViewManipulate needs the INVERSE of the view matrix (camera's world transform)
             glm::mat4 cameraMatrix = glm::inverse(view);
-
-            // ImGuizmo::ViewManipulate(
-            //     glm::value_ptr(cameraMatrix),
-            //     glm::value_ptr(projection),
-            //     ImGuizmo::OPERATION::TRANSLATE,
-            //     ImGuizmo::MODE::LOCAL,
-            //     glm::value_ptr(cameraMatrix),
-            //     80.0f,
-            //     ImVec2(swapChainExtent.width - 128, 0),
-            //     ImVec2(128, 128),
-            //     0x10101010
-            // );
             
             ImGuizmo::ViewManipulate(
                 glm::value_ptr(cameraMatrix),
@@ -1312,22 +1306,55 @@ private:
                 0x10101010
             );
 
-            // // debug logs
-            // if (ImGuizmo::IsOver())
-            //     std::cout << "Mouse is over the gizmo.\n";
-            // if (ImGuizmo::IsUsing())
-            //     std::cout << "Gizmo is being manipulated.\n";
+            glm::vec3 newPosition, skew;
+            glm::quat newRotation;
+            glm::vec3 newScale;
+            glm::vec4 perspective;
+            glm::decompose(cameraMatrix, newScale, newRotation, newPosition, skew, perspective);
 
-            // if (ImGuizmo::IsUsingViewManipulate()) {
-                glm::vec3 newPosition, skew;
-                glm::quat newRotation;
-                glm::vec3 newScale;
-                glm::vec4 perspective;
-                glm::decompose(cameraMatrix, newScale, newRotation, newPosition, skew, perspective);
+            camera.position3D = newPosition;
+            camera.rotation = newRotation;
 
-                camera.position3D = newPosition;
-                camera.rotation = newRotation;
-            // }
+            // Camera Controls ImGui Window
+            ImGui::Begin("Camera Controls");
+
+            currentPitch = camera.getPitch();
+            currentYaw = camera.getYaw();
+
+            ImGui::SliderFloat("Pitch", &currentPitch, -89.0f, 89.0f);
+            ImGui::SliderFloat("Yaw", &currentYaw, -180.0f, 180.0f);
+            ImGui::SliderFloat("Zoom", &camera.zoom, 0.1f, 25.0f);
+
+            camera.setPitch(currentPitch);
+            camera.setYaw(currentYaw);
+
+            ImGui::SliderFloat("Pan X", &panX, -1.0f, 1.0f);
+            ImGui::SliderFloat("Pan Y", &panY, -1.0f, 1.0f);
+            if (panX != 0.0f || panY != 0.0f) {
+                camera.pan(panX, panY);
+                panX = 0.0f; // Reset for incremental panning
+                panY = 0.0f; // Reset for incremental panning
+            }
+
+            if (ImGui::Button("Reset Camera")) {
+                camera.resetCamera();
+            }
+            if (ImGui::Button("Top View")) {
+                camera.setPosition(0.0f, 10.0f, 0.0f);
+                camera.lookAt(glm::vec3(0.0f, 0.0f, 0.0f));
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Front View")) {
+                camera.setPosition(0.0f, 0.0f, 10.0f);
+                camera.lookAt(glm::vec3(0.0f, 0.0f, 0.0f));
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Side View")) {
+                camera.setPosition(10.0f, 0.0f, 0.0f);
+                camera.lookAt(glm::vec3(0.0f, 0.0f, 0.0f));
+            }
+
+            ImGui::End();
 
             // Example ImGui window
             ImGui::Begin("Vulkan Engine");

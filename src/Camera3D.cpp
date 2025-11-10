@@ -92,11 +92,59 @@ public:
         updateTarget();
     }
 
+    // Get current pitch in degrees
+    float getPitch() const {
+        glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
+        return euler.x; // Pitch is typically around the X-axis
+    }
+
+    // Get current yaw in degrees
+    float getYaw() const {
+        glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
+        return euler.y; // Yaw is typically around the Y-axis
+    }
+
+    // Set pitch directly
+    void setPitch(float angleDegrees) {
+        glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
+        euler.x = angleDegrees;
+        rotation = glm::normalize(glm::quat(glm::radians(euler)));
+        updateTarget();
+    }
+
+    // Set yaw directly
+    void setYaw(float angleDegrees) {
+        glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
+        euler.y = angleDegrees;
+        rotation = glm::normalize(glm::quat(glm::radians(euler)));
+        updateTarget();
+    }
+
+    // Pan camera
+    void pan(float deltaX, float deltaY) {
+        glm::vec3 right = glm::normalize(glm::cross(target - position3D, up));
+        glm::vec3 cameraUp = glm::normalize(glm::cross(right, target - position3D));
+
+        position3D += right * deltaX;
+        target += right * deltaX;
+
+        position3D += cameraUp * deltaY;
+        target += cameraUp * deltaY;
+    }
+
     // Move forward/backward (zoom)
     void updateZoom(float delta) {
         glm::vec3 direction = glm::normalize(target - position3D);
         position3D += direction * delta;
         target += direction * delta;
+    }
+
+    // Reset camera to default state
+    void resetCamera() {
+        position3D = defaultPosition3D;
+        rotation = defaultRotation;
+        target = defaultTarget;
+        zoom = 1.0f;
     }
 
     // Reset zoom and target
