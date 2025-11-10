@@ -1361,13 +1361,10 @@ private:
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 
                         1000.0f / ImGui::GetIO().Framerate, 
                         ImGui::GetIO().Framerate);
-            
-            // Add a simple demo using GLM
-            static glm::vec3 position(0.0f, 0.0f, 0.0f);
-            ImGui::DragFloat3("Position", &position.x, 0.1f);
-            
-            glm::mat4 transform = glm::translate(glm::mat4(1.0f), position);
-            ImGui::Text("Transform matrix generated with GLM");
+
+            if (ImGui::Button("Add Landscape")) {
+                editor.chunkManager.generateFlatLandscape();
+            }
             
             ImGui::End();
 

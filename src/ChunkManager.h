@@ -150,35 +150,6 @@ public:
     const std::unordered_map<Chunk::ChunkCoord, std::unique_ptr<Chunk>>& getLoadedChunks() const {
         return loadedChunks;
     }
-    
-    // Generate terrain for a chunk (example implementation)
-    // void generateTerrain(Chunk* chunk) {
-    //     const Chunk::ChunkCoord& coord = chunk->getCoordinate();
-    //     glm::vec3 worldPos = chunk->getWorldPosition();
-        
-    //     // Simple terrain generation - flat ground at y=0
-    //     for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
-    //         for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
-    //             float worldX = worldPos.x + x * Chunk::VOXEL_SIZE;
-    //             float worldZ = worldPos.z + z * Chunk::VOXEL_SIZE;
-                
-    //             // Simple height variation
-    //             int height = static_cast<int>(5 + 3 * sin(worldX * 0.1f) * cos(worldZ * 0.1f));
-                
-    //             for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
-    //                 float worldY = worldPos.y + y * Chunk::VOXEL_SIZE;
-                    
-    //                 if (worldY < height) {
-    //                     // Vary color based on height
-    //                     float colorVariation = static_cast<float>(y) / Chunk::CHUNK_SIZE;
-    //                     glm::vec4 color(0.3f + colorVariation * 0.5f, 0.6f, 0.2f, 1.0f);
-                        
-    //                     chunk->setVoxel(x, y, z, Chunk::VoxelData(color, 1));
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
 
     void generateTerrain(Chunk* chunk) {
         const Chunk::ChunkCoord& coord = chunk->getCoordinate();
@@ -197,6 +168,44 @@ public:
                 chunk->setVoxel(x, 0, z, Chunk::VoxelData(color, 1));
             }
         }
+    }
+
+    // Public function for the ImGUI button
+    void generateFlatLandscape() {
+        // 1. Define the dimensions for 100x100 area at y=0
+        // CHUNK_SIZE = 32. 100/32 = 3.125. We need 4 chunks (0, 1, 2, 3).
+        const int NUM_CHUNKS_X = 4;
+        const int NUM_CHUNKS_Z = 4;
+        const int CHUNK_Y = 0; // The layer where the terrain will sit
+        
+        LOG("Starting generation and saving of 4x4 flat chunk landscape.");
+        
+        // 2. Iterate through the required chunk coordinates
+        for (int cx = 0; cx < NUM_CHUNKS_X; ++cx) {
+            for (int cz = 0; cz < NUM_CHUNKS_Z; ++cz) {
+                
+                Chunk::ChunkCoord coord{cx, CHUNK_Y, cz};
+                
+                // A. Create a new, temporary Chunk object (starts as all air)
+                auto newChunk = std::make_unique<Chunk>(coord);
+                
+                // B. Generate the flat terrain using the existing logic
+                // NOTE: Your existing generateTerrain function only populates y=0.
+                generateTerrain(newChunk.get()); 
+                
+                // C. Force a mesh rebuild to ensure the 'isEmpty' flag is updated
+                // (Crucial for efficient loading/saving if empty chunks are skipped)
+                newChunk->rebuildMesh(); 
+                
+                // D. Save the chunk directly to disk
+                // We use newChunk.get() because saveChunk expects a raw pointer.
+                saveChunk(coord, newChunk.get());
+            }
+        }
+
+        // TODO: load in from file now or no?
+
+        LOG("Flat landscape generation complete and saved to disk.");
     }
     
     // Configuration
@@ -256,11 +265,13 @@ private:
                 LOG("Loaded chunk from disk: " + filePath);
             }
             file.close();
-        } else {
-            // Generate new terrain for this chunk
-            generateTerrain(chunk.get());
-            LOG("Generated new chunk: " + filePath);
-        }
+        } 
+        // no desire for automatic terrain generation, only via button click(s)
+        // else {
+        //     // Generate new terrain for this chunk
+        //     generateTerrain(chunk.get());
+        //     LOG("Generated new chunk: " + filePath);
+        // }
         
         Chunk* ptr = chunk.get();
         loadedChunks[coord] = std::move(chunk);
@@ -301,4 +312,6 @@ private:
             LOG("ERROR: Could not save chunk to " + filePath);
         }
     }
+
+    
 };
