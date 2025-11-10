@@ -808,7 +808,7 @@ private:
             throw std::runtime_error("Failed to acquire swap chain image!");
         }
 
-        // updateUniformBuffer(currentFrame); // NOTE: spins the voxels (just for testing)
+        updateUniformBuffer(currentFrame); // NOTE: just updates the camera related data for now
 
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
@@ -913,7 +913,8 @@ private:
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
         UniformBufferObject ubo{};
-        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        // ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // causes unwanted spinning!
+        ubo.model = glm::mat4(1.0f);
         ubo.view = camera.getView();
         ubo.proj = camera.getProjection(swapChainExtent.width / (float) swapChainExtent.height);
         ubo.proj[1][1] *= -1;
@@ -1217,7 +1218,7 @@ private:
     void mainLoop() {
         LOG("Entering main loop");
 
-        initializeUniformBuffers();
+        initializeUniformBuffers(); // running update in drawFrame()
 
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
@@ -1236,19 +1237,44 @@ private:
             glm::mat4 projection = camera.getProjection(swapChainExtent.width / (float)swapChainExtent.height);
 
             // Manipulate view with ImGuizmo
-            glm::mat4 cameraMatrix = view; // ImGuizmo works with view matrix directly
-            ImGuizmo::ViewManipulate(glm::value_ptr(cameraMatrix), glm::value_ptr(projection), ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::LOCAL, glm::value_ptr(cameraMatrix), 80.0f, ImVec2(swapChainExtent.width - 128, 0), ImVec2(128, 128), 0x10101010);
+            glm::mat4 cameraMatrix = view;
+            // ImGuizmo::ViewManipulate(
+            //     glm::value_ptr(cameraMatrix),
+            //     glm::value_ptr(projection),
+            //     ImGuizmo::OPERATION::TRANSLATE,
+            //     ImGuizmo::MODE::LOCAL,
+            //     glm::value_ptr(cameraMatrix),
+            //     80.0f,
+            //     ImVec2(swapChainExtent.width - 128, 0),
+            //     ImVec2(128, 128),
+            //     0x10101010
+            // );
+            
+            ImGuizmo::ViewManipulate(
+                glm::value_ptr(cameraMatrix),
+                // glm::value_ptr(projection),
+                80.0f,
+                ImVec2(swapChainExtent.width - 128, 0),
+                ImVec2(128, 128),
+                0x10101010
+            );
 
-            // Update camera from manipulated matrix
-            glm::vec3 newPosition;
-            glm::quat newRotation;
-            glm::vec3 newScale;
-            glm::vec3 skew;
-            glm::vec4 perspective;
-            glm::decompose(cameraMatrix, newScale, newRotation, newPosition, skew, perspective);
-            camera.position3D = newPosition;
-            camera.rotation = newRotation;
-            camera.updateTarget();
+            // // debug logs
+            // if (ImGuizmo::IsOver())
+            //     std::cout << "Mouse is over the gizmo.\n";
+            // if (ImGuizmo::IsUsing())
+            //     std::cout << "Gizmo is being manipulated.\n";
+
+            if (ImGuizmo::IsUsingViewManipulate()) {
+                glm::vec3 newPosition, skew;
+                glm::quat newRotation;
+                glm::vec3 newScale;
+                glm::vec4 perspective;
+                glm::decompose(cameraMatrix, newScale, newRotation, newPosition, skew, perspective);
+
+                camera.position3D = newPosition;
+                camera.rotation = newRotation;
+            }
 
             // Example ImGui window
             ImGui::Begin("Vulkan Engine");

@@ -9,27 +9,33 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Export compile commands for IDE support
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+include(FetchContent)
+
+# Fetch latest ImGuizmo from GitHub
+FetchContent_Declare(
+    ImGuizmo
+    GIT_REPOSITORY https://github.com/CedricGuillemet/ImGuizmo.git
+    GIT_TAG master   # or a specific commit/tag if you want stability
+)
+
+FetchContent_MakeAvailable(ImGuizmo)
+
 # Find vcpkg packages
 find_package(glm CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
-find_package(imguizmo CONFIG REQUIRED)
+# find_package(imguizmo CONFIG REQUIRED)
 find_package(Jolt CONFIG REQUIRED)
 
 # Define your executable
 add_executable(${PROJECT_NAME}
     src/main.cpp
-    # these will be included directly be include statements since not using .h files currently
-    # src/Camera3D.cpp
-    # src/Voxel.cpp
-    # src/helpers.cpp
-    # src/types.cpp
-    # src/Vertex.cpp
-    # src/Editor.cpp
-    # src/Octree.cpp
-    # src/Logger.cpp
+    # other files currently included in main.cpp
+    # Add ImGuizmo source files directly to your target
+    ${imguizmo_SOURCE_DIR}/ImGuizmo.cpp
+    ${imguizmo_SOURCE_DIR}/ImGuizmo.h
 )
 
 # Link libraries
@@ -39,13 +45,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Vulkan::Vulkan
     GPUOpen::VulkanMemoryAllocator
     imgui::imgui
-    imguizmo::imguizmo
+    # imguizmo::imguizmo
+    # ImGuizmo   # <-- note: capital I, matches the CMake target defined by the repo
     Jolt::Jolt
 )
 
 # Include directories (if needed beyond what the targets provide)
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${imguizmo_SOURCE_DIR}
 )
 
 # Compiler warnings

@@ -10,7 +10,6 @@
       "name": "imgui",
       "features": ["glfw-binding", "vulkan-binding"]
     },
-    "imguizmo",
     "joltphysics"
   ]
 }
