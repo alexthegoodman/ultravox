@@ -30,11 +30,40 @@ namespace ObjectLayer {
     static constexpr JPH::ObjectLayer NUM_LAYERS = 2;
 };
 
-// Each broadphase layer will only collide with certain other broadphase layers
-namespace BroadPhaseLayer {
-    static constexpr JPH::BroadPhaseLayer NON_MOVING(0);
-    static constexpr JPH::BroadPhaseLayer MOVING(1);
-    static constexpr JPH::BroadPhaseLayer NUM_LAYERS(2);
+/// Class that defines the broad-phase layers and their mapping to object layers.
+class BroadPhaseLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface {
+public:
+    BroadPhaseLayerInterfaceImpl() {
+        // Create a mapping table from object to broad-phase layer
+        mObjectToBroadPhase[ObjectLayer::NON_MOVING] = BroadPhaseLayer::NON_MOVING;
+        mObjectToBroadPhase[ObjectLayer::MOVING] = BroadPhaseLayer::MOVING;
+    }
+
+    virtual JPH::uint GetNumBroadPhaseLayers() const override {
+        return BroadPhaseLayer::NUM_LAYERS.GetValue();
+    }
+
+    virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override {
+        JPH_ASSERT(inLayer < ObjectLayer::NUM_LAYERS);
+        return mObjectToBroadPhase[inLayer];
+    }
+
+#if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
+    virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const override {
+        switch ((JPH::BroadPhaseLayer::Type)inLayer) {
+            case (JPH::BroadPhaseLayer::Type)BroadPhaseLayer::NON_MOVING:
+                return "NON_MOVING";
+            case (JPH::BroadPhaseLayer::Type)BroadPhaseLayer::MOVING:
+                return "MOVING";
+            default:
+                JPH_ASSERT(false);
+                return "INVALID";
+        }
+    }
+#endif // JPH_EXTERNAL_PROFILE || JPH_PROFILE_ENABLED
+
+private:
+    JPH::BroadPhaseLayer mObjectToBroadPhase[ObjectLayer::NUM_LAYERS];
 };
 
 /// Class that helps determine if two object layers can collide
@@ -53,15 +82,29 @@ public:
     }
 };
 
-/// Class that helps determine if two broadphase layers can collide
-class BPLayerOverrideImpl : public JPH::BroadPhaseLayerFilter {
+// Each broadphase layer will only collide with certain other broadphase layers
+namespace BroadPhaseLayer {
+    static constexpr JPH::BroadPhaseLayer NON_MOVING(0);
+    static constexpr JPH::BroadPhaseLayer MOVING(1);
+    static constexpr JPH::BroadPhaseLayer NUM_LAYERS(2);
+};
+
+/// BroadPhaseLayerFilter implementation
+class ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter {
 public:
-    virtual bool ShouldCollide(JPH::BroadPhaseLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const {
-        if (inLayer1 == BroadPhaseLayer::NON_MOVING)
-            return inLayer2 == BroadPhaseLayer::MOVING;
-        return true;
+    virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override {
+        switch (inLayer1) {
+            case ObjectLayer::NON_MOVING:
+                return inLayer2 == BroadPhaseLayer::MOVING;
+            case ObjectLayer::MOVING:
+                return true;
+            default:
+                JPH_ASSERT(false);
+                return false;
+        }
     }
 };
+
 
 // An example contact listener
 class MyContactListener : public JPH::ContactListener {
@@ -129,8 +172,10 @@ private:
     JPH::JobSystemThreadPool* jobSystem;
     JPH::PhysicsSystem* physicsSystem;
 
-    ObjectLayerPairFilterImpl objectLayerPairFilter;
-    BPLayerOverrideImpl bpLayerOverride;
+    BroadPhaseLayerInterfaceImpl broadPhaseLayerInterface;
+    ObjectVsBroadPhaseLayerFilterImpl objectVsBroadphaseLayerFilter;
+    ObjectLayerPairFilterImpl objectVsObjectLayerFilter;
+
     MyContactListener contactListener;
     MyBodyActivationListener bodyActivationListener;
 };

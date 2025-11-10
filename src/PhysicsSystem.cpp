@@ -65,7 +65,7 @@ void PhysicsSystem::init() {
 
     // Create the physics system
     physicsSystem = new JPH::PhysicsSystem();
-    physicsSystem->Init(1024, 0, 1024, 1024, bpLayerOverride, objectLayerPairFilter, objectLayerPairFilter);
+    physicsSystem->Init(1024, 0, 1024, 1024, broadPhaseLayerInterface, objectVsBroadphaseLayerFilter, objectVsObjectLayerFilter);
 
     // A body activation listener gets notified when bodies activate and deactivate
     physicsSystem->SetBodyActivationListener(&bodyActivationListener);
