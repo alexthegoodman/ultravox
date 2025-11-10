@@ -1237,7 +1237,11 @@ private:
             glm::mat4 projection = camera.getProjection(swapChainExtent.width / (float)swapChainExtent.height);
 
             // Manipulate view with ImGuizmo
-            glm::mat4 cameraMatrix = view;
+            // glm::mat4 cameraMatrix = view;
+
+            // ViewManipulate needs the INVERSE of the view matrix (camera's world transform)
+            glm::mat4 cameraMatrix = glm::inverse(view);
+
             // ImGuizmo::ViewManipulate(
             //     glm::value_ptr(cameraMatrix),
             //     glm::value_ptr(projection),
@@ -1253,7 +1257,7 @@ private:
             ImGuizmo::ViewManipulate(
                 glm::value_ptr(cameraMatrix),
                 // glm::value_ptr(projection),
-                80.0f,
+                80.0f, // length
                 ImVec2(swapChainExtent.width - 128, 0),
                 ImVec2(128, 128),
                 0x10101010
@@ -1265,7 +1269,7 @@ private:
             // if (ImGuizmo::IsUsing())
             //     std::cout << "Gizmo is being manipulated.\n";
 
-            if (ImGuizmo::IsUsingViewManipulate()) {
+            // if (ImGuizmo::IsUsingViewManipulate()) {
                 glm::vec3 newPosition, skew;
                 glm::quat newRotation;
                 glm::vec3 newScale;
@@ -1274,7 +1278,7 @@ private:
 
                 camera.position3D = newPosition;
                 camera.rotation = newRotation;
-            }
+            // }
 
             // Example ImGui window
             ImGui::Begin("Vulkan Engine");
@@ -1296,6 +1300,7 @@ private:
 
             drawFrame();
         }
+
         LOG("Exiting main loop");
 
         vkDeviceWaitIdle(device);
