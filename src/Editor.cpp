@@ -3,13 +3,17 @@
 #include "Vertex.h"
 #include "Chunk.h"
 #include "ChunkManager.h"
+#include "PlayerCharacter.h"
+#include "Sphere.h"
 
 #include <vector>
+#include <memory>
 
 class Editor {
 public:
     // management
     ChunkManager chunkManager;
+    std::unique_ptr<PlayerCharacter> playerCharacter;
 
     // state
     bool isPlayingPreview = false;

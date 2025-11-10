@@ -10,6 +10,7 @@
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
+#include <Jolt/Physics/Character/Character.h>
 
 #include <glm/glm.hpp>
 
@@ -153,6 +154,11 @@ public:
 
     JPH::BodyID createBoxBody(const glm::vec3& position, const glm::vec3& halfExtent, JPH::EMotionType motionType, JPH::ObjectLayer objectLayer);
     void destroyBody(JPH::BodyID bodyID);
+
+    JPH::Character* createCharacter(const glm::vec3& position);
+    void destroyCharacter(JPH::Character* character);
+
+    JPH::PhysicsSystem* getJoltPhysicsSystem() { return physicsSystem; }
 
     // Helper to convert glm::vec3 to JPH::Vec3
     static JPH::Vec3 toJPHVec3(const glm::vec3& v) {

@@ -1,5 +1,12 @@
 #pragma once
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
 #include <glm/glm.hpp>
 #include "Octree.h" // For Vector3 definition
 
@@ -54,4 +61,45 @@ glm::vec4 HSLtoRGB(float h, float s, float l, float a) {
 // Conversion from glm::vec3 to Vector3
 inline Vector3 toCustomVector3(const glm::vec3& v) {
     return Vector3(v.x, v.y, v.z);
+}
+
+inline void createSphereMesh(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, int latitudeSegments, int longitudeSegments) {
+    vertices.clear();
+    indices.clear();
+
+    float radius = 1.0f;
+
+    for (int i = 0; i <= latitudeSegments; ++i) {
+        float theta = i * M_PI / latitudeSegments;
+        float sinTheta = sin(theta);
+        float cosTheta = cos(theta);
+
+        for (int j = 0; j <= longitudeSegments; ++j) {
+            float phi = j * 2 * M_PI / longitudeSegments;
+            float sinPhi = sin(phi);
+            float cosPhi = cos(phi);
+
+            Vertex vertex;
+            vertex.position.x = radius * cosPhi * sinTheta;
+            vertex.position.y = radius * cosTheta;
+            vertex.position.z = radius * sinPhi * sinTheta;
+            vertex.color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f); // Red color for the sphere
+            vertices.push_back(vertex);
+        }
+    }
+
+    for (int i = 0; i < latitudeSegments; ++i) {
+        for (int j = 0; j < longitudeSegments; ++j) {
+            int first = (i * (longitudeSegments + 1)) + j;
+            int second = first + longitudeSegments + 1;
+
+            indices.push_back(first);
+            indices.push_back(second);
+            indices.push_back(first + 1);
+
+            indices.push_back(second);
+            indices.push_back(second + 1);
+            indices.push_back(first + 1);
+        }
+    }
 }

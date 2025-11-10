@@ -1,6 +1,9 @@
 #include "PhysicsSystem.h"
 #include "Logger.h"
 
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Character/Character.h>
+
 // Callback for asserts, where we can choose to break or not
 // NOTE: I DO NOT want logs for physics bodies!
 // static void TraceImpl(const char *inFMT, ...) {
@@ -54,34 +57,22 @@ void PhysicsSystem::init() {
 
     JPH::RegisterDefaultAllocator();
 
-    LOG("Initializing Jolt Physics... 2a");
-
     // Create a factory
     JPH::Factory::sInstance = new JPH::Factory();
-
-    LOG("Initializing Jolt Physics... a");
 
     // Register all Jolt physics types
     JPH::RegisterTypes();
 
-    LOG("Initializing Jolt Physics... b");
-
     // We need a temp allocator for temporary allocations during the physics update. We're using a fixed size allocator.
     tempAllocator = new JPH::TempAllocatorMalloc();
-
-    LOG("Initializing Jolt Physics... c");
 
     // We need a job system that will execute physics jobs on multiple threads.
     // We use the default implementation for the job system.
     jobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
 
-    LOG("Initializing Jolt Physics... d");
-
     // Create the physics system
     physicsSystem = new JPH::PhysicsSystem();
     physicsSystem->Init(1024, 0, 1024, 1024, broadPhaseLayerInterface, objectVsBroadphaseLayerFilter, objectVsObjectLayerFilter);
-
-    LOG("Initializing Jolt Physics... 3");
 
     // A body activation listener gets notified when bodies activate and deactivate
     physicsSystem->SetBodyActivationListener(&bodyActivationListener);
@@ -166,5 +157,45 @@ void PhysicsSystem::destroyBody(JPH::BodyID bodyID) {
     if (physicsSystem && !bodyID.IsInvalid()) {
         physicsSystem->GetBodyInterface().RemoveBody(bodyID);
         physicsSystem->GetBodyInterface().DestroyBody(bodyID);
+    }
+}
+
+JPH::Character* PhysicsSystem::createCharacter(const glm::vec3& position) {
+    if (!physicsSystem) {
+        LOG("PhysicsSystem not initialized. Cannot create character.");
+        return nullptr;
+    }
+
+    // 1. Define shape settings (e.g., a capsule)
+    float character_height = 1.8f;
+    float character_radius = 0.4f;
+    JPH::Ref<JPH::ShapeSettings> shape_settings = new JPH::CapsuleShapeSettings(character_height / 2.0f, character_radius);
+
+    // 2. Create the shape (this "cooks" the shape into an optimized format)
+    JPH::ShapeSettings::ShapeResult shape_result = shape_settings->Create();
+    if (shape_result.HasError()) {
+        // Handle error
+        // ...
+    }
+
+    // 3. Get the resulting shape and assign it to character settings
+    JPH::Ref<JPH::Shape> character_shape = shape_result.Get();
+
+    JPH::Ref<JPH::CharacterSettings> settings = new JPH::CharacterSettings();
+    settings->mMaxSlopeAngle = JPH::DegreesToRadians(45.0f);
+    settings->mLayer = ObjectLayer::MOVING;
+    settings->mShape = character_shape;
+    settings->mFriction = 0.2f;
+    settings->mGravityFactor = 1.0f;
+
+    JPH::Character* character = new JPH::Character(settings, toJPHVec3(position), JPH::Quat::sIdentity(), 0, physicsSystem);
+    // character->Create();
+    return character;
+}
+
+void PhysicsSystem::destroyCharacter(JPH::Character* character) {
+    if (character) {
+        character->RemoveFromPhysicsSystem();
+        delete character;
     }
 }

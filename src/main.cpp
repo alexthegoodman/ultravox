@@ -43,6 +43,8 @@
 #include "Camera3D.cpp"
 #include "PhysicsSystem.h"
 #include "helpers.h"
+#include "PlayerCharacter.h"
+#include "Sphere.cpp"
 
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
@@ -177,6 +179,13 @@ private:
     std::unordered_map<Chunk::ChunkCoord, std::pair<VkBuffer, VmaAllocation>> chunkVertexBuffers;
     std::unordered_map<Chunk::ChunkCoord, std::pair<VkBuffer, VmaAllocation>> chunkIndexBuffers;
 
+    // Player rendering data
+    VkBuffer playerVertexBuffer;
+    VmaAllocation playerVertexBufferAllocation;
+    VkBuffer playerIndexBuffer;
+    VmaAllocation playerIndexBufferAllocation;
+    uint32_t playerIndexCount;
+
     // Map to store active Jolt physics bodies, keyed by voxel world position
     std::map<glm::vec3, JPH::BodyID> activePhysicsBodies;
 
@@ -231,9 +240,38 @@ private:
         createUniformBuffers();
         createDescriptorPool();
         createDescriptorSets();
+        createPlayerBuffers();
 
 
         LOG("Vulkan initialized!");
+    }
+
+    void createPlayerBuffers() {
+        std::vector<Vertex> vertices;
+        std::vector<uint32_t> indices;
+        createSphereMesh(vertices, indices, 20, 20);
+        playerIndexCount = static_cast<uint32_t>(indices.size());
+
+        // Create vertex buffer
+        VkDeviceSize vertexBufferSize = sizeof(vertices[0]) * vertices.size();
+        createBuffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, playerVertexBuffer, playerVertexBufferAllocation);
+        void* vertexData;
+        vmaMapMemory(allocator, playerVertexBufferAllocation, &vertexData);
+        memcpy(vertexData, vertices.data(), (size_t)vertexBufferSize);
+        vmaUnmapMemory(allocator, playerVertexBufferAllocation);
+
+        // Create index buffer
+        VkDeviceSize indexBufferSize = sizeof(indices[0]) * indices.size();
+        createBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, playerIndexBuffer, playerIndexBufferAllocation);
+        void* indexData;
+        vmaMapMemory(allocator, playerIndexBufferAllocation, &indexData);
+        memcpy(indexData, indices.data(), (size_t)indexBufferSize);
+        vmaUnmapMemory(allocator, playerIndexBufferAllocation);
+    }
+
+    void destroyPlayerBuffers() {
+        vmaDestroyBuffer(allocator, playerVertexBuffer, playerVertexBufferAllocation);
+        vmaDestroyBuffer(allocator, playerIndexBuffer, playerIndexBufferAllocation);
     }
 
     void createInstance() {
@@ -824,6 +862,15 @@ private:
                 // Draw
                 vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(chunk->getIndices().size()), 1, 0, 0, 0);
             }
+        }
+
+        // Render player
+        if (editor.playerCharacter) {
+            VkBuffer vertexBuffers[] = {playerVertexBuffer};
+            VkDeviceSize offsets[] = {0};
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(commandBuffer, playerIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdDrawIndexed(commandBuffer, playerIndexCount, 1, 0, 0, 0);
         }
 
         // Render ImGui
@@ -1419,8 +1466,51 @@ private:
 
             ImGui::Text("Active Physics Bodies %i", 
                         activePhysicsBodies.size());
+
+            if (ImGui::Button("Add Character")) {
+                if (!editor.playerCharacter) {
+                    editor.playerCharacter = std::make_unique<PlayerCharacter>(physicsSystem, glm::vec3(0.0f, 10.0f, 0.0f));
+                }
+            }
+
+            if (editor.playerCharacter) {
+                if (ImGui::Button(editor.isPlayingPreview ? "Stop Preview" : "Play Preview")) {
+                    if (editor.isPlayingPreview) {
+                        editor.stopPlayingPreview();
+                    } else {
+                        editor.startPlayingPreview();
+                    }
+                }
+            }
             
             ImGui::End();
+
+            if (editor.isPlayingPreview && editor.playerCharacter) {
+                glm::vec3 movement(0.0f);
+                if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+                    movement.z -= 1.0f;
+                }
+                if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+                    movement.z += 1.0f;
+                }
+                if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+                    movement.x -= 1.0f;
+                }
+                if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+                    movement.x += 1.0f;
+                }
+
+                if (glm::length(movement) > 0.0f) {
+                    movement = glm::normalize(movement) * 5.0f;
+                }
+                editor.playerCharacter->setLinearVelocity(movement);
+
+                // Update camera to follow player
+                glm::vec3 playerPos = editor.playerCharacter->getPosition();
+                glm::vec3 newPos = playerPos + glm::vec3(0.0f, 2.0f, 5.0f);
+                camera.setPosition(newPos.x, newPos.y, newPos.z);
+                camera.lookAt(playerPos);
+            }
 
             // Render ImGui
             ImGui::Render();
@@ -1445,6 +1535,8 @@ private:
         for (auto const& [coord, bufferPair] : chunkIndexBuffers) {
             vmaDestroyBuffer(allocator, bufferPair.first, bufferPair.second);
         }
+
+        destroyPlayerBuffers();
 
         cleanupSwapChain();
 
