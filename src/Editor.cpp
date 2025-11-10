@@ -18,21 +18,21 @@ public:
         // LOG("Starting Editor");
         
         // editor settings allow for more to visible
-        chunkManager.setLoadRadius(10);  // Load chunks (by center of chunk) within 5 units radius of camera position
-        chunkManager.setUnloadRadius(16); // Unload chunks (by center of chunk) within 8 units radius of camera position
+        chunkManager.setLoadRadius(5);
+        chunkManager.setUnloadRadius(8);
     }
 
     void startPlayingPreview() {
         isPlayingPreview = true;
         
         // restrict range to improve gameplay performance
-        chunkManager.setLoadRadius(5);
-        chunkManager.setUnloadRadius(8);
+        chunkManager.setLoadRadius(2);
+        chunkManager.setUnloadRadius(4);
     }
 
     void stopPlayingPreview() {
         isPlayingPreview = false;
-        chunkManager.setLoadRadius(10);
-        chunkManager.setUnloadRadius(16);
+        chunkManager.setLoadRadius(5);
+        chunkManager.setUnloadRadius(8);
     }
 };

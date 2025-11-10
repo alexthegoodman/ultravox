@@ -326,9 +326,17 @@ public:
     }
     
     // Configuration
+
+    // Set the radius (not in world units, but in number of chunks)
     void setLoadRadius(int radius) { loadRadius = radius; }
+
+    // Set the radius (not in world units, but in number of chunks)
     void setUnloadRadius(int radius) { unloadRadius = radius; }
+    
+    // Get the radius (not in world units, but in number of chunks)
     int getLoadRadius() const { return loadRadius; }
+
+    // Get the radius (not in world units, but in number of chunks)
     int getUnloadRadius() const { return unloadRadius; }
 
 private:
