@@ -29,6 +29,7 @@
 #include <chrono>
 #include <ctime>
 #include <mutex>
+#include <map>
 
 #include <unordered_map>
 #include <utility>
@@ -41,6 +42,8 @@
 #include "ChunkManager.h"
 #include "Editor.cpp"
 #include "Camera3D.cpp"
+#include "PhysicsSystem.h"
+#include "helpers.cpp" // Include helpers for toCustomVector3
 
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
@@ -162,6 +165,7 @@ private:
 
     Editor editor;
     Camera3D camera;
+    PhysicsSystem physicsSystem;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
     std::vector<VkBuffer> uniformBuffers;
@@ -173,6 +177,9 @@ private:
     // Chunk rendering data
     std::unordered_map<Chunk::ChunkCoord, std::pair<VkBuffer, VmaAllocation>> chunkVertexBuffers;
     std::unordered_map<Chunk::ChunkCoord, std::pair<VkBuffer, VmaAllocation>> chunkIndexBuffers;
+
+    // Map to store active Jolt physics bodies, keyed by voxel world position
+    std::map<glm::vec3, JPH::BodyID> activePhysicsBodies;
 
     // Camera control variables for ImGui
     float currentPitch = 0.0f;
@@ -216,6 +223,7 @@ private:
         createCommandBuffers();
         createSyncObjects();
         createAllocator();
+        physicsSystem.init();
 
         LOG("Continuing Vulkan Initialization...");
 
@@ -1274,9 +1282,49 @@ private:
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
 
+            // Update physics system
+            physicsSystem.update(1.0f / ImGui::GetIO().Framerate, 1);
+
             // Update chunk manager
             editor.chunkManager.updateLoadedChunks(camera.position3D);
             editor.chunkManager.rebuildDirtyChunks();
+
+            // --- Physics Body Management ---
+            float physicsActivationRadius = 50.0f; // Define the radius around the camera for active physics bodies
+            std::vector<OctreeData<Chunk::PhysicsVoxelData>> voxelsInRadius = 
+                editor.chunkManager.physicsOctree.queryRadius(toCustomVector3(camera.position3D), physicsActivationRadius);
+
+            std::set<glm::vec3> shouldBeActivePositions;
+            for (const auto& octreeData : voxelsInRadius) {
+                shouldBeActivePositions.insert(PhysicsSystem::toGLMVec3(octreeData.position));
+
+                if (activePhysicsBodies.find(PhysicsSystem::toGLMVec3(octreeData.position)) == activePhysicsBodies.end()) {
+                    // Create new Jolt body
+                    JPH::BodyID newBodyID = physicsSystem.createBoxBody(
+                        PhysicsSystem::toGLMVec3(octreeData.position),
+                        glm::vec3(octreeData.data.size / 2.0f), // Half extent
+                        JPH::EMotionType::Static, // Voxels are static
+                        ObjectLayer::NON_MOVING
+                    );
+                    if (newBodyID.IsValid()) {
+                        activePhysicsBodies[PhysicsSystem::toGLMVec3(octreeData.position)] = newBodyID;
+                    }
+                }
+            }
+
+            // Clean up inactive bodies
+            std::vector<glm::vec3> toRemove;
+            for (const auto& pair : activePhysicsBodies) {
+                if (shouldBeActivePositions.find(pair.first) == shouldBeActivePositions.end()) {
+                    toRemove.push_back(pair.first);
+                }
+            }
+
+            for (const auto& pos : toRemove) {
+                physicsSystem.destroyBody(activePhysicsBodies[pos]);
+                activePhysicsBodies.erase(pos);
+            }
+            // --- End Physics Body Management ---
 
             // Start ImGui frame
             ImGui_ImplVulkan_NewFrame();
@@ -1423,6 +1471,8 @@ private:
         vmaDestroyAllocator(allocator);
 
         vkDestroyRenderPass(device, renderPass, nullptr);
+
+        physicsSystem.shutdown();
 
         vkDestroyDevice(device, nullptr);
 

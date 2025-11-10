@@ -35,6 +35,20 @@ public:
         VoxelData(const glm::vec4& c, uint8_t t) : color(c), type(t) {}
     };
 
+    // Physics data for a single voxel
+    struct PhysicsVoxelData {
+        glm::vec3 worldPosition;
+        float size; // Assuming uniform size for now
+        uint8_t type; // Corresponds to VoxelData::type
+
+        // Default constructor
+        PhysicsVoxelData() : worldPosition(0.0f), size(0.0f), type(0) {}
+
+        // Parameterized constructor
+        PhysicsVoxelData(const glm::vec3& pos, float s, uint8_t t)
+            : worldPosition(pos), size(s), type(t) {}
+    };
+
 private:
     ChunkCoord coordinate;
     std::vector<VoxelData> voxels; // Flat array: index = x + y*SIZE + z*SIZE*SIZE

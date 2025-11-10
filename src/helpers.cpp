@@ -1,4 +1,5 @@
 #include <glm/glm.hpp>
+#include "Octree.cpp" // For Vector3 definition
 
 inline glm::vec2 toNDC(float x, float y, float width, float height) {
     float ndcX = (x / width) * 2.0f - 1.0f;
@@ -46,4 +47,9 @@ glm::vec4 HSLtoRGB(float h, float s, float l, float a) {
     float b = hue2rgb(p, q, h - 1.0f/3.0f);
     
     return glm::vec4(r, g, b, a);
+}
+
+// Conversion from glm::vec3 to Vector3
+inline Vector3 toCustomVector3(const glm::vec3& v) {
+    return Vector3(v.x, v.y, v.z);
 }

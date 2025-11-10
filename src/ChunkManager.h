@@ -13,6 +13,8 @@
 #include "Chunk.h"
 #include "Logger.h"
 #include "helpers.cpp"
+#include "Octree.cpp" // Include Octree implementation
+#include "PhysicsSystem.h" // For JPH::Vec3 conversion
 
 // Custom hash for ChunkCoord
 namespace std {
@@ -29,7 +31,8 @@ public:
     ChunkManager(const std::string& worldPath = "world_data") 
         : worldDataPath(worldPath),
           loadRadius(3),
-          unloadRadius(5) {
+          unloadRadius(5),
+          physicsOctree(BoundingBox({-10000.0f, -10000.0f, -10000.0f}, {10000.0f, 10000.0f, 10000.0f})) { // Initialize Octree with a large enough bounds
         // Create world data directory if it doesn't exist
         std::filesystem::create_directories(worldDataPath);
         LOG("ChunkManager initialized with path: " + worldDataPath);
@@ -178,6 +181,7 @@ public:
 
     void generateTerrain(Chunk* chunk) {
         const Chunk::ChunkCoord& coord = chunk->getCoordinate();
+        glm::vec3 chunkWorldPos = chunk->getWorldPosition();
         
         // Only generate terrain for chunks that touch y=0
         if (coord.y != 0) return;
@@ -203,6 +207,11 @@ public:
                 
                 // Place a single voxel at y=0 with the rainbow color
                 chunk->setVoxel(x, 0, z, Chunk::VoxelData(color, 1));
+
+                // Insert physics voxel data into the octree
+                glm::vec3 voxelWorldPos = chunkWorldPos + glm::vec3(x, 0, z) * Chunk::VOXEL_SIZE;
+                Chunk::PhysicsVoxelData physicsData(voxelWorldPos, Chunk::VOXEL_SIZE, 1);
+                physicsOctree.insert(Vector3(voxelWorldPos.x, voxelWorldPos.y, voxelWorldPos.z), physicsData);
             }
         }
     }
@@ -384,19 +393,35 @@ private:
         auto chunk = std::make_unique<Chunk>(coord);
         std::string filePath = getChunkFilePath(coord);
         
+        bool loadedFromDisk = false;
         if (std::filesystem::exists(filePath)) {
             std::ifstream file(filePath, std::ios::binary);
             if (file.is_open() && chunk->loadFromBinary(file)) {
                 LOG("Loaded chunk from disk: " + filePath);
+                loadedFromDisk = true;
             }
             file.close();
         } 
-        // no desire for automatic terrain generation, only via button click(s)
-        // else {
-        //     // Generate new terrain for this chunk
-        //     generateTerrain(chunk.get());
-        //     LOG("Generated new chunk: " + filePath);
-        // }
+        
+        if (loadedFromDisk) {
+            // If loaded from disk, populate physicsOctree with existing solid voxels
+            glm::vec3 chunkWorldPos = chunk->getWorldPosition();
+            for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
+                for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
+                    for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
+                        if (chunk->isSolid(x, y, z)) {
+                            glm::vec3 voxelWorldPos = chunkWorldPos + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
+                            Chunk::PhysicsVoxelData physicsData(voxelWorldPos, Chunk::VOXEL_SIZE, chunk->getVoxel(x, y, z).type);
+                            physicsOctree.insert(Vector3(voxelWorldPos.x, voxelWorldPos.y, voxelWorldPos.z), physicsData);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Generate new terrain for this chunk (which also populates the octree)
+            generateTerrain(chunk.get());
+            LOG("Generated new chunk: " + filePath);
+        }
         
         Chunk* ptr = chunk.get();
         loadedChunks[coord] = std::move(chunk);
@@ -420,6 +445,24 @@ private:
             modifiedChunks.erase(coord);
         }
         
+        // Remove physics voxel data from the octree
+        Chunk* chunk = it->second.get();
+        glm::vec3 chunkWorldPos = chunk->getWorldPosition();
+        for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
+            for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
+                for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
+                    if (chunk->isSolid(x, y, z)) {
+                        glm::vec3 voxelWorldPos = chunkWorldPos + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
+                        // The predicate ensures we remove the correct PhysicsVoxelData if multiple exist at the same position (though for voxels, it should be unique)
+                        physicsOctree.remove(Vector3(voxelWorldPos.x, voxelWorldPos.y, voxelWorldPos.z), 
+                                             [&](const Chunk::PhysicsVoxelData& data){
+                                                 return data.worldPosition == voxelWorldPos && data.type == chunk->getVoxel(x,y,z).type;
+                                             });
+                    }
+                }
+            }
+        }
+
         loadedChunks.erase(it);
         LOG("Unloaded chunk: " + std::to_string(coord.x) + "," + 
             std::to_string(coord.y) + "," + std::to_string(coord.z));
