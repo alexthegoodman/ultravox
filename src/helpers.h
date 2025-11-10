@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "Octree.cpp" // For Vector3 definition
+#include "Octree.h" // For Vector3 definition
 
 inline glm::vec2 toNDC(float x, float y, float width, float height) {
     float ndcX = (x / width) * 2.0f - 1.0f;

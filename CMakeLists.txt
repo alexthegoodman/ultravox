@@ -32,6 +32,7 @@ find_package(Jolt CONFIG REQUIRED)
 # Define your executable
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    src/PhysicsSystem.cpp
     # other files currently included in main.cpp
     # Add ImGuizmo source files directly to your target
     ${imguizmo_SOURCE_DIR}/ImGuizmo.cpp

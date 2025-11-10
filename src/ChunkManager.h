@@ -13,7 +13,7 @@
 #include "Chunk.h"
 #include "Logger.h"
 #include "helpers.h"
-#include "Octree.cpp" // Include Octree implementation
+#include "Octree.h" // Include Octree implementation
 #include "PhysicsSystem.h" // For JPH::Vec3 conversion
 
 // Custom hash for ChunkCoord

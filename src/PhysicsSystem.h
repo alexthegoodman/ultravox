@@ -13,6 +13,8 @@
 
 #include <glm/glm.hpp>
 
+#include "Octree.h"
+
 // All Jolt includes can be compiled only once (one .cpp file should include this).
 // This is done in PhysicsSystem.cpp
 
