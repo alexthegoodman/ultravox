@@ -8,26 +8,31 @@
 
 class Editor {
 public:
-    // std::vector<Voxel> voxels;
-    
-    // Combined mesh data
-    // std::vector<Vertex> vertexCache;
-    // std::vector<uint32_t> indiceCache;
-
+    // management
     ChunkManager chunkManager;
+
+    // state
+    bool isPlayingPreview = false;
 
     Editor() {
         // LOG("Starting Editor");
         
-        chunkManager.setLoadRadius(5);  // Load chunks within 5 chunk radius
-        chunkManager.setUnloadRadius(8); // Unload beyond 8 chunk radius
+        // editor settings allow for more to visible
+        chunkManager.setLoadRadius(10);  // Load chunks (by center of chunk) within 5 units radius of camera position
+        chunkManager.setUnloadRadius(16); // Unload chunks (by center of chunk) within 8 units radius of camera position
     }
 
-    // const std::vector<Vertex>& getVertices() const {
-    //     return vertexCache;
-    // }
+    void startPlayingPreview() {
+        isPlayingPreview = true;
+        
+        // restrict range to improve gameplay performance
+        chunkManager.setLoadRadius(5);
+        chunkManager.setUnloadRadius(8);
+    }
 
-    // const std::vector<uint32_t>& getIndices() const {
-    //     return indiceCache;
-    // }
+    void stopPlayingPreview() {
+        isPlayingPreview = false;
+        chunkManager.setLoadRadius(10);
+        chunkManager.setUnloadRadius(16);
+    }
 };
