@@ -32,8 +32,10 @@
 
 // include in desired order since not using .h files
 #include "Logger.cpp"
-#include "Vertex.cpp"
+#include "Vertex.h"
 #include "Voxel.cpp"
+#include "Chunk.h"
+#include "ChunkManager.h"
 #include "Editor.cpp"
 #include "Camera3D.cpp"
 
@@ -1308,6 +1310,9 @@ private:
 
     void cleanup() {
         LOG("Starting cleanup");
+
+        // editor.chunkManager.saveAllChunks(); ? or perhaps autosave is more appropriate
+
         cleanupSwapChain();
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
