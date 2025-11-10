@@ -7,6 +7,11 @@
 #include <filesystem>
 #include <queue>
 #include <unordered_set>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+
+#include "helpers.cpp"
 
 // Custom hash for ChunkCoord
 namespace std {
@@ -151,9 +156,27 @@ public:
         return loadedChunks;
     }
 
+    // void generateTerrain(Chunk* chunk) {
+    //     const Chunk::ChunkCoord& coord = chunk->getCoordinate();
+    //     glm::vec3 worldPos = chunk->getWorldPosition();
+        
+    //     // Only generate terrain for chunks that touch y=0
+    //     if (coord.y != 0) return;
+        
+    //     // Simple flat terrain at y=0
+    //     for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
+    //         for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
+    //             // Just place a single voxel at y=0
+    //             // glm::vec4 color(0.3f, 0.6f, 0.2f, 1.0f); // Green grass color
+    //             float colorVariation = static_cast<float>(z + x) / Chunk::CHUNK_SIZE;
+    //             glm::vec4 color(0.3f + colorVariation * 0.5f, 0.6f, 0.2f, 1.0f);
+    //             chunk->setVoxel(x, 0, z, Chunk::VoxelData(color, 1));
+    //         }
+    //     }
+    // }
+
     void generateTerrain(Chunk* chunk) {
         const Chunk::ChunkCoord& coord = chunk->getCoordinate();
-        glm::vec3 worldPos = chunk->getWorldPosition();
         
         // Only generate terrain for chunks that touch y=0
         if (coord.y != 0) return;
@@ -161,10 +184,23 @@ public:
         // Simple flat terrain at y=0
         for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
             for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
-                // Just place a single voxel at y=0
-                // glm::vec4 color(0.3f, 0.6f, 0.2f, 1.0f); // Green grass color
-                float colorVariation = static_cast<float>(z + x) / Chunk::CHUNK_SIZE;
-                glm::vec4 color(0.3f + colorVariation * 0.5f, 0.6f, 0.2f, 1.0f);
+                
+                // Calculate a color index based on the x and z coordinates
+                // We use the full extent of the chunk for the color range (0 to 2*CHUNK_SIZE - 2)
+                float totalIndex = static_cast<float>(x + z);
+                float maxIndex = static_cast<float>(Chunk::CHUNK_SIZE * 2 - 2);
+                
+                // Map the index to a Hue value (0.0 to 1.0) for the rainbow
+                float hue = totalIndex / maxIndex; // 0.0 (Red) -> 1.0 (Red/Violet)
+                
+                // Set Saturation and Lightness for vibrant colors
+                float saturation = 1.0f; // Full saturation
+                float lightness = 0.5f;  // Mid-range lightness for pure hues
+                
+                // Convert HSL to an RGB color vector
+                glm::vec4 color = HSLtoRGB(hue, saturation, lightness, 1.0f);
+                
+                // Place a single voxel at y=0 with the rainbow color
                 chunk->setVoxel(x, 0, z, Chunk::VoxelData(color, 1));
             }
         }
@@ -206,6 +242,86 @@ public:
         // TODO: load in from file now or no?
 
         LOG("Flat landscape generation complete and saved to disk.");
+    }
+
+    // Helper function to read a binary chunk file and write the contents to a text file
+    void exportChunkDataToTextFile(const std::string& binaryFilePath, const std::string& textExportPath) {
+        std::ifstream binaryFile(binaryFilePath, std::ios::binary);
+        std::ofstream textFile(textExportPath);
+
+        if (!binaryFile.is_open()) {
+            std::cerr << "ERROR: Could not open binary file: " << binaryFilePath << std::endl;
+            return;
+        }
+        if (!textFile.is_open()) {
+            std::cerr << "ERROR: Could not create output file: " << textExportPath << std::endl;
+            return;
+        }
+
+        textFile << "--- CHUNK DATA INSPECTION REPORT ---" << std::endl;
+        textFile << "Source Binary: " << binaryFilePath << std::endl;
+        textFile << "-----------------------------------" << std::endl;
+
+        // 1. Read and print ChunkCoord (3 ints)
+        Chunk::ChunkCoord coord;
+        if (binaryFile.read(reinterpret_cast<char*>(&coord), sizeof(Chunk::ChunkCoord))) {
+            textFile << "  [HEADER] Coordinate: (" << coord.x << ", " << coord.y << ", " << coord.z << ")" << std::endl;
+        } else {
+            textFile << "ERROR: Could not read ChunkCoord header. File might be truncated." << std::endl;
+            return;
+        }
+
+        // 2. Read and print isEmpty flag (1 bool)
+        bool isEmpty = false;
+        if (binaryFile.read(reinterpret_cast<char*>(&isEmpty), sizeof(bool))) {
+            textFile << "  [HEADER] Is Empty: " << (isEmpty ? "TRUE" : "FALSE") << std::endl;
+        } else {
+            textFile << "ERROR: Could not read isEmpty flag." << std::endl;
+            return;
+        }
+
+        // 3. Read and print Voxel Data (if not empty)
+        if (!isEmpty) {
+            textFile << "  [DATA] Voxel data present. Size: " << Chunk::CHUNK_SIZE << "^3 voxels." << std::endl;
+            
+            // Setup for readable output
+            textFile << std::fixed << std::setprecision(4); // Increased precision for color verification
+            
+            int solidCount = 0;
+            int maxVoxels = Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE;
+            
+            for (int i = 0; i < maxVoxels; ++i) {
+                Chunk::VoxelData data;
+                
+                if (binaryFile.read(reinterpret_cast<char*>(&data), sizeof(Chunk::VoxelData))) {
+                    if (data.type != 0) {
+                        solidCount++;
+                        
+                        // Convert flat index back to local (x, y, z)
+                        int x = i % Chunk::CHUNK_SIZE;
+                        int y = (i / Chunk::CHUNK_SIZE) % Chunk::CHUNK_SIZE;
+                        int z = i / (Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE);
+                        
+                        // Write solid voxel details
+                        textFile << "    (" << std::setw(2) << x << "," << std::setw(2) << y << "," << std::setw(2) << z << ") " 
+                                << "Type: " << (int)data.type 
+                                << ", Color: (" << data.color.r << ", " << data.color.g << ", " << data.color.b << ", " << data.color.a << ")" 
+                                << std::endl;
+                    }
+                } else {
+                    textFile << "ERROR: Failed to read all voxel data. File truncated after " << i << " voxels." << std::endl;
+                    break;
+                }
+            }
+            textFile << "  [SUMMARY] Total solid voxels read: " << solidCount << std::endl;
+        }
+
+        textFile << "----------------- END OF REPORT -----------------" << std::endl;
+        
+        // Close both files
+        binaryFile.close();
+        textFile.close();
+        std::cout << "Successfully exported data inspection to: " << textExportPath << std::endl;
     }
     
     // Configuration

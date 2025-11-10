@@ -1365,6 +1365,10 @@ private:
             if (ImGui::Button("Add Landscape")) {
                 editor.chunkManager.generateFlatLandscape();
             }
+
+            if (ImGui::Button("Inspect Landscape Data")) {
+                editor.chunkManager.exportChunkDataToTextFile("world_data/chunk_0_0_0.dat", "chunk_0_0_0.txt");
+            }
             
             ImGui::End();
 

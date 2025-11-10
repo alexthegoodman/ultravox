@@ -19,3 +19,31 @@ inline float toSystemScale(float humanDim, float windowDim) {
 inline float fromSystemScale(float scaleDim, float windowDim) {
     return (scaleDim / 2.0f) * windowDim;
 }
+
+// --- HSL to RGB Conversion Helper Function ---
+// This is a standard HSL/HSV to RGB conversion often used in graphics.
+// It converts a Hue (h) from [0, 1] to an RGB color.
+glm::vec4 HSLtoRGB(float h, float s, float l, float a) {
+    // If saturation is 0, it's a shade of gray
+    if (s == 0.0f) {
+        return glm::vec4(l, l, l, a);
+    }
+    
+    auto hue2rgb = [](float p, float q, float t) {
+        if (t < 0.0f) t += 1.0f;
+        if (t > 1.0f) t -= 1.0f;
+        if (t < 1.0f/6.0f) return p + (q - p) * 6.0f * t;
+        if (t < 1.0f/2.0f) return q;
+        if (t < 2.0f/3.0f) return p + (q - p) * (2.0f/3.0f - t) * 6.0f;
+        return p;
+    };
+    
+    float q = l < 0.5f ? l * (1.0f + s) : l + s - l * s;
+    float p = 2.0f * l - q;
+    
+    float r = hue2rgb(p, q, h + 1.0f/3.0f);
+    float g = hue2rgb(p, q, h);
+    float b = hue2rgb(p, q, h - 1.0f/3.0f);
+    
+    return glm::vec4(r, g, b, a);
+}
