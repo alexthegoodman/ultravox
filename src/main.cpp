@@ -34,7 +34,7 @@
 #include <utility>
 
 // include in desired order since not using .h files
-#include "Logger.cpp"
+#include "Logger.h"
 #include "Vertex.h"
 #include "Voxel.cpp"
 #include "Chunk.h"
@@ -1332,8 +1332,8 @@ private:
             ImGui::SliderFloat("Pan Y", &panY, -3.0f, 3.0f);
             if (panX != 0.0f || panY != 0.0f) {
                 camera.pan(panX, panY);
-                panX = 0.0f; // Reset for incremental panning
-                panY = 0.0f; // Reset for incremental panning
+                // panX = 0.0f; // Reset for incremental panning
+                // panY = 0.0f; // Reset for incremental panning
             }
 
             if (ImGui::Button("Reset Camera")) {

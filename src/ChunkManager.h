@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Chunk.h"
 #include <unordered_map>
 #include <memory>
 #include <string>
@@ -11,6 +10,8 @@
 #include <fstream>
 #include <iomanip>
 
+#include "Chunk.h"
+#include "Logger.h"
 #include "helpers.cpp"
 
 // Custom hash for ChunkCoord
