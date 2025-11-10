@@ -12,7 +12,7 @@
 
 #include "Chunk.h"
 #include "Logger.h"
-#include "helpers.cpp"
+#include "helpers.h"
 #include "Octree.cpp" // Include Octree implementation
 #include "PhysicsSystem.h" // For JPH::Vec3 conversion
 

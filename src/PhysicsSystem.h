@@ -30,6 +30,13 @@ namespace ObjectLayer {
     static constexpr JPH::ObjectLayer NUM_LAYERS = 2;
 };
 
+// Each broadphase layer will only collide with certain other broadphase layers
+namespace BroadPhaseLayer {
+    static constexpr JPH::BroadPhaseLayer NON_MOVING(0);
+    static constexpr JPH::BroadPhaseLayer MOVING(1);
+    static constexpr JPH::BroadPhaseLayer NUM_LAYERS(2);
+};
+
 /// Class that defines the broad-phase layers and their mapping to object layers.
 class BroadPhaseLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface {
 public:
@@ -80,13 +87,6 @@ public:
                 return false;
         }
     }
-};
-
-// Each broadphase layer will only collide with certain other broadphase layers
-namespace BroadPhaseLayer {
-    static constexpr JPH::BroadPhaseLayer NON_MOVING(0);
-    static constexpr JPH::BroadPhaseLayer MOVING(1);
-    static constexpr JPH::BroadPhaseLayer NUM_LAYERS(2);
 };
 
 /// BroadPhaseLayerFilter implementation

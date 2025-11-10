@@ -34,7 +34,6 @@
 #include <unordered_map>
 #include <utility>
 
-// include in desired order since not using .h files
 #include "Logger.h"
 #include "Vertex.h"
 #include "Voxel.cpp"
@@ -43,7 +42,7 @@
 #include "Editor.cpp"
 #include "Camera3D.cpp"
 #include "PhysicsSystem.h"
-#include "helpers.cpp" // Include helpers for toCustomVector3
+#include "helpers.h"
 
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;

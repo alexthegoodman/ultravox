@@ -1,3 +1,5 @@
+#pragma once
+
 #include <glm/glm.hpp>
 #include "Octree.cpp" // For Vector3 definition
 
