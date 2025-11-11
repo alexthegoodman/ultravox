@@ -1535,7 +1535,7 @@ private:
                     newVoxelPos.y = floor(newVoxelPos.y / Chunk::VOXEL_SIZE) * Chunk::VOXEL_SIZE;
                     newVoxelPos.z = floor(newVoxelPos.z / Chunk::VOXEL_SIZE) * Chunk::VOXEL_SIZE;
 
-                    LOG("NEW VOXEL COORDS: " + std::to_string(newVoxelPos.x) + " " + std::to_string(newVoxelPos.y) + " " + std::to_string(newVoxelPos.z) + " ");
+                    // LOG("NEW VOXEL COORDS: " + std::to_string(newVoxelPos.x) + " " + std::to_string(newVoxelPos.y) + " " + std::to_string(newVoxelPos.z) + " ");
 
                     // Check if a voxel already exists at this position or if it was painted in this stroke
                     if (paintedVoxelsInStroke.find(newVoxelPos) == paintedVoxelsInStroke.end() &&

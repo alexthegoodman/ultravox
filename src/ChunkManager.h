@@ -133,7 +133,7 @@ public:
                 // Create an empty chunk to hold new voxel edits
                 chunk = createEmptyChunk(chunkCoord);
                 
-                LOG("Created new chunk at " + std::to_string(chunkCoord.x) + ", " + std::to_string(chunkCoord.y) + ", " + std::to_string(chunkCoord.z));
+                // LOG("Created new chunk at " + std::to_string(chunkCoord.x) + ", " + std::to_string(chunkCoord.y) + ", " + std::to_string(chunkCoord.z));
             }
         }
 
