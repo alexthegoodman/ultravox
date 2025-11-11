@@ -33,6 +33,8 @@ find_package(Jolt CONFIG REQUIRED)
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/PhysicsSystem.cpp
+    src/PlayerCharacter.cpp
+    src/Sphere.cpp
     # other files currently included in main.cpp
     # Add ImGuizmo source files directly to your target
     ${imguizmo_SOURCE_DIR}/ImGuizmo.cpp
