@@ -131,20 +131,35 @@ public:
                     const VoxelData& voxel = getVoxel(x, y, z);
                     glm::vec3 pos = worldPos + glm::vec3(x, y, z) * VOXEL_SIZE;
                     
-                    // Check each face
-                    // if (!isSolid(x, y + 1, z)) addFace(pos, voxel.color, 0); // Top
-                    // if (!isSolid(x, y - 1, z)) addFace(pos, voxel.color, 1); // Bottom
-                    // if (!isSolid(x + 1, y, z)) addFace(pos, voxel.color, 2); // Right
-                    // if (!isSolid(x - 1, y, z)) addFace(pos, voxel.color, 3); // Left
-                    // if (!isSolid(x, y, z + 1)) addFace(pos, voxel.color, 4); // Front
-                    // if (!isSolid(x, y, z - 1)) addFace(pos, voxel.color, 5); // Back
+                    // Add debug check:
+                    if (std::isnan(pos.x) || std::isnan(pos.y) || std::isnan(pos.z)) {
+                        continue; // Skip invalid positions
+                    }
 
-                    addFace(pos, voxel.color, 0); // Top
-                    addFace(pos, voxel.color, 1); // Bottom
-                    addFace(pos, voxel.color, 2); // Right
-                    addFace(pos, voxel.color, 3); // Left
-                    addFace(pos, voxel.color, 4); // Front
-                    addFace(pos, voxel.color, 5); // Back
+                    // Check each face
+                    if (!isSolid(x, y + 1, z)) addFace(pos, voxel.color, 0); // Top
+                    if (!isSolid(x, y - 1, z)) addFace(pos, voxel.color, 1); // Bottom
+                    if (!isSolid(x + 1, y, z)) addFace(pos, voxel.color, 2); // Right
+                    if (!isSolid(x - 1, y, z)) addFace(pos, voxel.color, 3); // Left
+                    if (!isSolid(x, y, z + 1)) addFace(pos, voxel.color, 4); // Front
+                    if (!isSolid(x, y, z - 1)) addFace(pos, voxel.color, 5); // Back
+
+                    // do all sides for now for testing
+                    // addFace(pos, voxel.color, 0); // Top
+                    // addFace(pos, voxel.color, 1); // Bottom
+                    // addFace(pos, voxel.color, 2); // Right
+                    // addFace(pos, voxel.color, 3); // Left
+                    // addFace(pos, voxel.color, 4); // Front
+                    // addFace(pos, voxel.color, 5); // Back
+
+                    // addFace(pos, glm::vec4(1.0f, 0.0f, 0.0f, 1.0f), 0); // Top
+                    // addFace(pos, glm::vec4(0.5f, 0.0f, 0.0f, 1.0f), 1); // Bottom
+                    // addFace(pos, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), 2); // Right
+                    // addFace(pos, glm::vec4(0.0f, 0.5f, 0.0f, 1.0f), 3); // Left
+                    // addFace(pos, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 4); // Front
+                    // addFace(pos, glm::vec4(0.0f, 0.0f, 0.5f, 1.0f), 5); // Back
+
+                    // addCube(pos, voxel.color);
                 }
             }
         }
@@ -195,6 +210,77 @@ public:
     }
 
 private:
+    void addCube(const glm::vec3& pos, const glm::vec4& color) {
+        float w = VOXEL_SIZE;
+        float h = VOXEL_SIZE;
+        float d = VOXEL_SIZE;
+        float hw = w / 2.0f; // half width
+        float hh = h / 2.0f; // half height
+        float hd = d / 2.0f; // half depth
+
+        // Define the 8 cube corners (local positions)
+        glm::vec3 localPositions[8] = {
+            glm::vec3(-hw, -hh,  hd), // 0 Front-bottom-left
+            glm::vec3( hw, -hh,  hd), // 1 Front-bottom-right
+            glm::vec3( hw,  hh,  hd), // 2 Front-top-right
+            glm::vec3(-hw,  hh,  hd), // 3 Front-top-left
+            glm::vec3(-hw, -hh, -hd), // 4 Back-bottom-left
+            glm::vec3( hw, -hh, -hd), // 5 Back-bottom-right
+            glm::vec3( hw,  hh, -hd), // 6 Back-top-right
+            glm::vec3(-hw,  hh, -hd)  // 7 Back-top-left
+        };
+
+        // Transform to world position
+        glm::vec3 positions[8];
+        for (int i = 0; i < 8; ++i) {
+            positions[i] = pos + localPositions[i];
+        }
+
+        // Define faces with indices and normals
+        struct Face {
+            int indices[6];
+            glm::vec3 normal;
+        };
+
+        Face faces[6] = {
+            {{0, 1, 2, 0, 2, 3}, glm::vec3( 0,  0,  1)}, // Front
+            {{5, 4, 7, 5, 7, 6}, glm::vec3( 0,  0, -1)}, // Back
+            {{3, 2, 6, 3, 6, 7}, glm::vec3( 0,  1,  0)}, // Top
+            {{4, 5, 1, 4, 1, 0}, glm::vec3( 0, -1,  0)}, // Bottom
+            {{1, 5, 6, 1, 6, 2}, glm::vec3( 1,  0,  0)}, // Right
+            {{4, 0, 3, 4, 3, 7}, glm::vec3(-1,  0,  0)}  // Left
+        };
+
+        // Build geometry for all faces
+        for (int faceIdx = 0; faceIdx < 6; ++faceIdx) {
+            const Face& face = faces[faceIdx];
+            uint32_t startIndex = static_cast<uint32_t>(vertexCache.size());
+
+            // Add 6 vertices (2 triangles per face)
+            for (int i = 0; i < 6; ++i) {
+                int idx = face.indices[i];
+                glm::vec3 p = positions[idx];
+                
+                Vertex v;
+                v.position = p;
+                v.texCoords = glm::vec2(0.0f, 0.0f);
+                v.color = color;
+                v.gradientCoords = glm::vec2((p.x - pos.x + hw) / w, (p.y - pos.y + hh) / h);
+                v.objectType = 6.0f; // 6 = solid voxel
+                v.normal = face.normal;
+                vertexCache.push_back(v);
+            }
+
+            // Add indices (already in the correct order from face.indices)
+            indexCache.push_back(startIndex + 0);
+            indexCache.push_back(startIndex + 1);
+            indexCache.push_back(startIndex + 2);
+            indexCache.push_back(startIndex + 3);
+            indexCache.push_back(startIndex + 4);
+            indexCache.push_back(startIndex + 5);
+        }
+    }
+
     void addFace(const glm::vec3& pos, const glm::vec4& color, int faceIndex) {
         uint32_t baseIndex = static_cast<uint32_t>(vertexCache.size());
         
@@ -267,4 +353,5 @@ private:
         indexCache.push_back(baseIndex + 2);
         indexCache.push_back(baseIndex + 3);
     }
+
 };

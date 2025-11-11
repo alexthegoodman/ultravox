@@ -12,9 +12,9 @@ PlayerCharacter::~PlayerCharacter() {
     physicsSystem.destroyCharacter(character);
 }
 
-void PlayerCharacter::update() {
+void PlayerCharacter::update(glm::vec3 playerPos) {
     if (character) {
-        sphere.setPosition(getPosition());
+        sphere.setPosition(playerPos);
     } else {
         LOG("NO CHARACTER 1");
     }

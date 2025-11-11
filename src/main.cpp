@@ -120,11 +120,18 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-struct UniformBufferObject {
+// struct UniformBufferObject {
+//     glm::mat4 model;
+//     glm::mat4 view;
+//     glm::mat4 proj;
+// };
+
+struct alignas(16) UniformBufferObject {
     glm::mat4 model;
     glm::mat4 view;
     glm::mat4 proj;
 };
+
 
 class VulkanEngine {
 public:
@@ -1075,7 +1082,9 @@ private:
         rasterizer.rasterizerDiscardEnable = VK_FALSE;
         rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
         rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        // rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        // rasterizer.cullMode = VK_CULL_MODE_NONE;
+        rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT; // works with a single voxel, still bad for many
         rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
         rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -1083,6 +1092,15 @@ private:
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisampling.sampleShadingEnable = VK_FALSE;
         multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+        // ADD THIS:
+        VkPipelineDepthStencilStateCreateInfo depthStencil{};
+        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencil.depthTestEnable = VK_TRUE;
+        depthStencil.depthWriteEnable = VK_TRUE;
+        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+        depthStencil.depthBoundsTestEnable = VK_FALSE;
+        depthStencil.stencilTestEnable = VK_FALSE;
 
         VkPipelineColorBlendAttachmentState colorBlendAttachment{};
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -1117,6 +1135,7 @@ private:
         pipelineInfo.pViewportState = &viewportState;
         pipelineInfo.pRasterizationState = &rasterizer;
         pipelineInfo.pMultisampleState = &multisampling;
+        pipelineInfo.pDepthStencilState = &depthStencil;
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.layout = pipelineLayout;
         pipelineInfo.renderPass = renderPass;
@@ -1312,6 +1331,15 @@ private:
 
             float deltaTime = 1.0f / ImGui::GetIO().Framerate;
 
+            // if (editor.playerCharacter) {
+            //     glm::vec3 playerPos = editor.playerCharacter->getPosition();
+            //     editor.playerCharacter->update(playerPos);
+            // }
+
+            if (editor.isPlayingPreview) {
+                physicsSystem.update(deltaTime, 1);
+            }
+
             if (editor.isPlayingPreview && editor.playerCharacter) {
                 glm::vec3 movement(0.0f);
                 if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
@@ -1328,19 +1356,29 @@ private:
                 }
 
                 if (glm::length(movement) > 0.0f) {
-                    movement = glm::normalize(movement) * 5.0f;
+                    movement = glm::normalize(movement) * 1.0f;
+
+                    editor.playerCharacter->setLinearVelocity(movement);
+
+                    // JPH::Vec3 currentVel = editor.playerCharacter->character->GetLinearVelocity();
+                    // glm::vec3 currentVelGLM = glm::vec3(currentVel.GetX(), currentVel.GetY(), currentVel.GetZ());
+                    // glm::vec3 targetVel = movement; // your input
+                    // glm::vec3 deltaVel = targetVel - currentVelGLM;
+
+                    // // optionally clamp deltaVel to prevent sudden large jumps
+                    // float maxDelta = 0.2f; 
+                    // if (glm::length(deltaVel) > maxDelta)
+                    //     deltaVel = glm::normalize(deltaVel) * maxDelta;
+
+                    // editor.playerCharacter->character->AddLinearVelocity(JPH::Vec3(deltaVel.x, deltaVel.y, deltaVel.z));
+
+                    glm::vec3 playerPos = editor.playerCharacter->getPosition();
+                    // editor.playerCharacter->update(playerPos);
+                    editor.playerCharacter->sphere.transform.position = playerPos;
                 }
-                
-                editor.playerCharacter->setLinearVelocity(movement);
             }
 
-            if (editor.isPlayingPreview) {
-                physicsSystem.update(deltaTime, 1);
-            }
-
-            if (editor.playerCharacter) {
-                editor.playerCharacter->update();
-                
+            if (editor.playerCharacter) {                
                 // Update camera to follow player
                 if (editor.isPlayingPreview) {
                     glm::vec3 playerPos = editor.playerCharacter->getPosition();
@@ -1348,6 +1386,8 @@ private:
                     glm::vec3 newPos = playerPos + glm::vec3(0.0f, 2.0f, 5.0f);
                     camera.setPosition(newPos.x, newPos.y, newPos.z);
                     camera.lookAt(playerPos);
+
+                    // editor.playerCharacter->sphere.transform.position = playerPos;
                 }
             }
 
@@ -1396,6 +1436,7 @@ private:
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
+            
             ImGuizmo::BeginFrame();
 
             // Set ImGuizmo display size
@@ -1404,9 +1445,6 @@ private:
             // Get camera matrices
             glm::mat4 view = camera.getView();
             glm::mat4 projection = camera.getProjection(swapChainExtent.width / (float)swapChainExtent.height);
-
-            // Manipulate view with ImGuizmo
-            // glm::mat4 cameraMatrix = view;
 
             // ViewManipulate needs the INVERSE of the view matrix (camera's world transform)
             glm::mat4 cameraMatrix = glm::inverse(view);
@@ -1445,14 +1483,6 @@ private:
             if (currentYaw != camera.getYaw()) {
                 camera.setYaw(currentYaw);
             }
-
-            // ImGui::SliderFloat("Pan X", &panX, -3.0f, 3.0f);
-            // ImGui::SliderFloat("Pan Y", &panY, -3.0f, 3.0f);
-            // if (panX != 0.0f || panY != 0.0f) {
-            //     camera.pan(panX, panY);
-            //     panX = 0.0f; // Reset for incremental panning
-            //     panY = 0.0f; // Reset for incremental panning
-            // }
 
             ImGui::SliderFloat("Pan X", &panX, -20.0f, 20.0f);
             ImGui::SliderFloat("Pan Y", &panY, -20.0f, 20.0f);
@@ -1512,7 +1542,7 @@ private:
 
             if (ImGui::Button("Add Character")) {
                 if (!editor.playerCharacter) {
-                    editor.playerCharacter = std::make_unique<PlayerCharacter>(physicsSystem, glm::vec3(4.0f, 4.0f, 4.0f));
+                    editor.playerCharacter = std::make_unique<PlayerCharacter>(physicsSystem, glm::vec3(25.0f, 4.0f, 25.0f));
                 }
             }
 
