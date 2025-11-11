@@ -44,7 +44,7 @@
 #include "PhysicsSystem.h"
 #include "helpers.h"
 #include "PlayerCharacter.h"
-#include "Sphere.cpp"
+#include "Sphere.h"
 
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
