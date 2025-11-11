@@ -72,7 +72,10 @@ void PhysicsSystem::init() {
 
     // Create the physics system
     physicsSystem = new JPH::PhysicsSystem();
-    physicsSystem->Init(1024, 0, 1024, 1024, broadPhaseLayerInterface, objectVsBroadphaseLayerFilter, objectVsObjectLayerFilter);
+
+    int maxBodies = 2048;
+
+    physicsSystem->Init(maxBodies, 0, maxBodies, maxBodies, broadPhaseLayerInterface, objectVsBroadphaseLayerFilter, objectVsObjectLayerFilter);
 
     // A body activation listener gets notified when bodies activate and deactivate
     physicsSystem->SetBodyActivationListener(&bodyActivationListener);
@@ -188,8 +191,16 @@ JPH::Character* PhysicsSystem::createCharacter(const glm::vec3& position) {
     settings->mFriction = 0.2f;
     settings->mGravityFactor = 1.0f;
 
-    JPH::Character* character = new JPH::Character(settings, toJPHVec3(position), JPH::Quat::sIdentity(), 0, physicsSystem);
+    JPH::Vec3 joltVec = toJPHVec3(position);
+
+    LOG("Provided position immediately before creation: " + std::to_string(position.y) + " and " + std::to_string(joltVec.GetY()));
+
+    JPH::Character* character = new JPH::Character(settings, joltVec, JPH::Quat::sIdentity(), 0, physicsSystem);
     character->AddToPhysicsSystem(JPH::EActivation::Activate);
+
+    character->SetPosition(joltVec);
+
+    LOG("Jolt position immediately after creation: " + std::to_string(character->GetPosition().GetY()));
     
     return character;
 }

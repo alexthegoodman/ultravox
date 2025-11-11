@@ -188,6 +188,7 @@ private:
 
     // Map to store active Jolt physics bodies, keyed by voxel world position
     std::map<glm::vec3, JPH::BodyID> activePhysicsBodies;
+    float physicsActivationRadius = 10.0f; // Define the radius around the camera for active physics bodies
 
     // Camera control variables for ImGui
     float currentPitch = 0.0f;
@@ -862,6 +863,7 @@ private:
 
         // Render player
         if (editor.playerCharacter) {
+            // LOG("SPHERE TRANSFORMS. X " + std::to_string(editor.playerCharacter->sphere.transform.position.x) + " Y " + std::to_string(editor.playerCharacter->sphere.transform.position.y) + " Z " + std::to_string(editor.playerCharacter->sphere.transform.position.z));
             updateUniformBuffer(currentFrame, editor.playerCharacter->getModelMatrix());
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
@@ -1308,15 +1310,50 @@ private:
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
 
-            // Update physics system
-            physicsSystem.update(1.0f / ImGui::GetIO().Framerate, 1);
+            float deltaTime = 1.0f / ImGui::GetIO().Framerate;
+
+            if (editor.isPlayingPreview && editor.playerCharacter) {
+                glm::vec3 movement(0.0f);
+                if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+                    movement.z -= 1.0f;
+                }
+                if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+                    movement.z += 1.0f;
+                }
+                if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+                    movement.x -= 1.0f;
+                }
+                if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+                    movement.x += 1.0f;
+                }
+
+                if (glm::length(movement) > 0.0f) {
+                    movement = glm::normalize(movement) * 5.0f;
+                }
+                
+                editor.playerCharacter->setLinearVelocity(movement);
+            }
+
+            physicsSystem.update(deltaTime, 1);
+
+            if (editor.playerCharacter) {
+                editor.playerCharacter->update();
+                
+                // Update camera to follow player
+                if (editor.isPlayingPreview) {
+                    glm::vec3 playerPos = editor.playerCharacter->getPosition();
+                    glm::vec3 newPos = playerPos + glm::vec3(0.0f, 2.0f, 5.0f);
+                    camera.setPosition(newPos.x, newPos.y, newPos.z);
+                    camera.lookAt(playerPos);
+                }
+            }
 
             // Update chunk manager
             editor.chunkManager.updateLoadedChunks(camera.position3D);
             editor.chunkManager.rebuildDirtyChunks();
 
             // --- Physics Body Management ---
-            float physicsActivationRadius = 50.0f; // Define the radius around the camera for active physics bodies
+            
             std::vector<OctreeData<Chunk::PhysicsVoxelData>> voxelsInRadius = 
                 editor.chunkManager.physicsOctree.queryRadius(toCustomVector3(camera.position3D), physicsActivationRadius);
 
@@ -1488,35 +1525,35 @@ private:
             
             ImGui::End();
 
-            if (editor.isPlayingPreview && editor.playerCharacter) {
-                glm::vec3 movement(0.0f);
-                if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-                    // LOG("W (FORWARD) PRESS");
-                    movement.z -= 1.0f;
-                }
-                if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-                    movement.z += 1.0f;
-                }
-                if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-                    movement.x -= 1.0f;
-                }
-                if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-                    movement.x += 1.0f;
-                }
+            // if (editor.isPlayingPreview && editor.playerCharacter) {
+            //     glm::vec3 movement(0.0f);
+            //     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            //         // LOG("W (FORWARD) PRESS");
+            //         movement.z -= 1.0f;
+            //     }
+            //     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            //         movement.z += 1.0f;
+            //     }
+            //     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            //         movement.x -= 1.0f;
+            //     }
+            //     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            //         movement.x += 1.0f;
+            //     }
 
-                if (glm::length(movement) > 0.0f) {
-                    movement = glm::normalize(movement) * 5.0f;
-                }
+            //     if (glm::length(movement) > 0.0f) {
+            //         movement = glm::normalize(movement) * 5.0f;
+            //     }
                 
-                editor.playerCharacter->setLinearVelocity(movement);
-                editor.playerCharacter->update();
+            //     editor.playerCharacter->setLinearVelocity(movement);
+            //     editor.playerCharacter->update();
 
-                // Update camera to follow player
-                glm::vec3 playerPos = editor.playerCharacter->getPosition();
-                glm::vec3 newPos = playerPos + glm::vec3(0.0f, 2.0f, 5.0f);
-                camera.setPosition(newPos.x, newPos.y, newPos.z);
-                camera.lookAt(playerPos);
-            }
+            //     // Update camera to follow player
+            //     glm::vec3 playerPos = editor.playerCharacter->getPosition();
+            //     glm::vec3 newPos = playerPos + glm::vec3(0.0f, 2.0f, 5.0f);
+            //     camera.setPosition(newPos.x, newPos.y, newPos.z);
+            //     camera.lookAt(playerPos);
+            // }
 
             // Render ImGui
             ImGui::Render();
