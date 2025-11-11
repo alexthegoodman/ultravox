@@ -127,10 +127,28 @@ struct SwapChainSupportDetails {
 // };
 
 struct alignas(16) UniformBufferObject {
-    glm::mat4 model;
+    // glm::mat4 model;
     glm::mat4 view;
     glm::mat4 proj;
 };
+
+std::string matrixToString(const glm::mat4& matrix) {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(4);
+    for (int i = 0; i < 4; i++) {
+        ss << "[ ";
+        for (int j = 0; j < 4; j++) {
+            ss << std::setw(10) << matrix[j][i];
+            if (j < 3) ss << ", ";
+        }
+        ss << " ]\n";
+    }
+    return ss.str();
+}
+
+// Usage:
+// glm::mat4 modelMatrix = editor.playerCharacter->getModelMatrix();
+// LOG("Model Matrix:\n" + matrixToString(modelMatrix));
 
 
 class VulkanEngine {
@@ -841,38 +859,36 @@ private:
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-        // Render all loaded chunks
+        // Update view/proj once per frame
+        updateUniformBuffer(currentFrame);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+
+        // Render chunks
         for (const auto& pair : editor.chunkManager.getLoadedChunks()) {
             const Chunk::ChunkCoord& coord = pair.first;
             const std::unique_ptr<Chunk>& chunk = pair.second;
 
             if (!chunk->empty()) {
-                // Ensure buffers exist and are up-to-date
                 if (chunk->isDirty() || chunkVertexBuffers.find(coord) == chunkVertexBuffers.end()) {
                     updateChunkBuffers(coord, chunk->getVertices(), chunk->getIndices());
                 }
 
-                updateUniformBuffer(currentFrame, glm::mat4(1.0f));
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+                // Push model matrix for this chunk
+                glm::mat4 chunkModel = glm::mat4(1.0f);
+                vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &chunkModel);
 
-                // Bind vertex buffer
                 VkBuffer vertexBuffers[] = {chunkVertexBuffers[coord].first};
                 VkDeviceSize offsets[] = {0};
                 vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-                // Bind index buffer
                 vkCmdBindIndexBuffer(commandBuffer, chunkIndexBuffers[coord].first, 0, VK_INDEX_TYPE_UINT32);
-
-                // Draw
                 vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(chunk->getIndices().size()), 1, 0, 0, 0);
             }
         }
 
         // Render player
         if (editor.playerCharacter) {
-            // LOG("SPHERE TRANSFORMS. X " + std::to_string(editor.playerCharacter->sphere.transform.position.x) + " Y " + std::to_string(editor.playerCharacter->sphere.transform.position.y) + " Z " + std::to_string(editor.playerCharacter->sphere.transform.position.z));
-            updateUniformBuffer(currentFrame, editor.playerCharacter->getModelMatrix());
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+            glm::mat4 playerModel = editor.playerCharacter->getModelMatrix();
+            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &playerModel);
 
             VkBuffer vertexBuffers[] = {playerVertexBuffer};
             VkDeviceSize offsets[] = {0};
@@ -986,12 +1002,12 @@ private:
     }
 
     void initializeUniformBuffers() {
-        updateUniformBuffer(currentFrame, glm::mat4(1.0f));
+        updateUniformBuffer(currentFrame);
     }
 
-    void updateUniformBuffer(uint32_t currentImage, glm::mat4 modelMatrix) {
+    void updateUniformBuffer(uint32_t currentImage) {
         UniformBufferObject ubo{};
-        ubo.model = modelMatrix;
+        // ubo.model = modelMatrix;
         ubo.view = camera.getView();
         ubo.proj = camera.getProjection(swapChainExtent.width / (float) swapChainExtent.height);
         ubo.proj[1][1] *= -1;
@@ -1082,9 +1098,9 @@ private:
         rasterizer.rasterizerDiscardEnable = VK_FALSE;
         rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
         rasterizer.lineWidth = 1.0f;
-        // rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
         // rasterizer.cullMode = VK_CULL_MODE_NONE;
-        rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT; // works with a single voxel, still bad for many
+        // rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT; // works with a single voxel, still bad for many
         rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
         rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -1117,10 +1133,23 @@ private:
         colorBlending.blendConstants[2] = 0.0f;
         colorBlending.blendConstants[3] = 0.0f;
 
+        // VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+        // pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        // pipelineLayoutInfo.setLayoutCount = 1;
+        // pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+
+        // 2. Add push constant range to pipeline layout creation
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = sizeof(glm::mat4);
+
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");
@@ -1543,6 +1572,7 @@ private:
             if (ImGui::Button("Add Character")) {
                 if (!editor.playerCharacter) {
                     editor.playerCharacter = std::make_unique<PlayerCharacter>(physicsSystem, glm::vec3(25.0f, 4.0f, 25.0f));
+                    LOG("PC X: " + std::to_string(editor.playerCharacter->sphere.transform.position.x));
                 }
             }
 

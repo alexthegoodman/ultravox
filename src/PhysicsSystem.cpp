@@ -193,14 +193,14 @@ JPH::Character* PhysicsSystem::createCharacter(const glm::vec3& position) {
 
     JPH::Vec3 joltVec = toJPHVec3(position);
 
-    LOG("Provided position immediately before creation: " + std::to_string(position.y) + " and " + std::to_string(joltVec.GetY()));
+    LOG("Provided position immediately before creation: " + std::to_string(joltVec.GetX()) + " and " + std::to_string(joltVec.GetY()) + " and " + std::to_string(joltVec.GetZ()));
 
     JPH::Character* character = new JPH::Character(settings, joltVec, JPH::Quat::sIdentity(), 0, physicsSystem);
     character->AddToPhysicsSystem(JPH::EActivation::Activate);
 
     character->SetPosition(joltVec);
 
-    LOG("Jolt position immediately after creation: " + std::to_string(character->GetPosition().GetY()));
+    LOG("Jolt position immediately after creation: " + std::to_string(character->GetPosition().GetX()) + " " + std::to_string(character->GetPosition().GetY()) + " " + std::to_string(character->GetPosition().GetZ()));
     
     return character;
 }

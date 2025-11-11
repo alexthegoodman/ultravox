@@ -6,7 +6,7 @@ class Sphere {
 public:
     Transform transform;
 
-    Sphere() = default;
+    // Sphere() = default;
     Sphere(const glm::vec3& position, float radius) {
         transform.position = position;
         // transform.scale = glm::vec3(radius); // makes no sense
