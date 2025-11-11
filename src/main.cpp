@@ -1374,7 +1374,7 @@ private:
             ImGuizmo::ViewManipulate(
                 glm::value_ptr(cameraMatrix),
                 // glm::value_ptr(projection),
-                80.0f, // length
+                20.0f, // length
                 ImVec2(swapChainExtent.width - 128, 0),
                 ImVec2(128, 128),
                 0x10101010
@@ -1414,8 +1414,8 @@ private:
             //     panY = 0.0f; // Reset for incremental panning
             // }
 
-            ImGui::SliderFloat("Pan X", &panX, -3.0f, 3.0f);
-            ImGui::SliderFloat("Pan Y", &panY, -3.0f, 3.0f);
+            ImGui::SliderFloat("Pan X", &panX, -20.0f, 20.0f);
+            ImGui::SliderFloat("Pan Y", &panY, -20.0f, 20.0f);
 
             float deltaX = panX - prevPanX;
             float deltaY = panY - prevPanY;
@@ -1442,12 +1442,12 @@ private:
             }
             ImGui::SameLine();
             if (ImGui::Button("Front View")) {
-                camera.setPosition(0.0f, 0.0f, 10.0f);
+                camera.setPosition(0.0f, 5.0f, 10.0f);
                 camera.lookAt(glm::vec3(0.0f, 0.0f, 0.0f));
             }
             ImGui::SameLine();
             if (ImGui::Button("Side View")) {
-                camera.setPosition(10.0f, 0.0f, 0.0f);
+                camera.setPosition(10.0f, 5.0f, 0.0f);
                 camera.lookAt(glm::vec3(0.0f, 0.0f, 0.0f));
             }
 
@@ -1531,11 +1531,7 @@ private:
     void cleanup() {
         LOG("Starting cleanup");
 
-        // editor.chunkManager.saveAllChunks(); ? or perhaps autosave is more appropriate
-
-        if (editor.playerCharacter) {
-            physicsSystem.destroyCharacter(editor.playerCharacter->character);
-        }
+        // editor.chunkManager.saveAllChunks(); ? or perhaps autosave is more appropriate, besides, dont want to overwrite all files maybe? or better to?
 
         // Destroy all chunk buffers
         for (auto const& [coord, bufferPair] : chunkVertexBuffers) {
@@ -1574,6 +1570,10 @@ private:
         vmaDestroyAllocator(allocator);
 
         vkDestroyRenderPass(device, renderPass, nullptr);
+
+        if (editor.playerCharacter) {
+            physicsSystem.destroyCharacter(editor.playerCharacter->character);
+        }
 
         physicsSystem.shutdown();
 
