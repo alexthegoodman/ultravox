@@ -158,6 +158,15 @@ public:
     JPH::Character* createCharacter(const glm::vec3& position);
     void destroyCharacter(JPH::Character* character);
 
+    struct RayCastResult {
+        bool hasHit = false;
+        JPH::BodyID bodyID;
+        glm::vec3 hitPosition;
+        glm::vec3 hitNormal;
+    };
+
+    RayCastResult castRay(const glm::vec3& origin, const glm::vec3& direction);
+
     JPH::PhysicsSystem* getJoltPhysicsSystem() { return physicsSystem; }
 
     // Helper to convert glm::vec3 to JPH::Vec3

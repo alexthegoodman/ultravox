@@ -17,6 +17,7 @@ public:
 
     // state
     bool isPlayingPreview = false;
+    bool isPainting = false;
 
     Editor() {
         // LOG("Starting Editor");

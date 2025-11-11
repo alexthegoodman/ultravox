@@ -3,6 +3,16 @@
 
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Character/Character.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+// #include <Jolt/Physics/Collision/CastRay.h>
+#include <Jolt/Physics/Collision/CollisionCollector.h> // Added for ClosestHitCollisionCollector
+#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
+#include <Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h>
+#include <Jolt/Physics/Collision/ObjectLayer.h>
+#include <Jolt/Physics/Body/BodyID.h>
+#include <Jolt/Core/NonCopyable.h>
+#include <Jolt/Physics/Collision/TransformedShape.h>
+#include <Jolt/Physics/Collision/Shape/SubShapeID.h>
 
 // Callback for asserts, where we can choose to break or not
 // NOTE: I DO NOT want logs for physics bodies!
@@ -210,4 +220,72 @@ void PhysicsSystem::destroyCharacter(JPH::Character* character) {
         character->RemoveFromPhysicsSystem();
         delete character;
     }
+}
+
+PhysicsSystem::RayCastResult PhysicsSystem::castRay(const glm::vec3& origin, const glm::vec3& direction) {
+    RayCastResult result;
+
+    // Convert glm vectors to Jolt vectors
+    JPH::RVec3 joltOrigin = toJPHVec3(origin);
+    JPH::Vec3 joltDirection = toJPHVec3(direction);
+
+    // Create Jolt ray
+    JPH::RayCast ray(joltOrigin, joltDirection * 1000.0f); // Multiply by a large number for ray length
+
+    // Create a collision collector
+    JPH::ClosestHitCollisionCollector<JPH::RayCastBodyCollector> collector;
+    // JPH::RayCastBodyCollector collector;
+
+    // Cast the ray using the broad phase query
+    // physicsSystem->GetBroadPhaseQuery().CastRay(ray, collector);
+
+    // if (collector.HadHit()) {
+    //     result.hasHit = true;
+    //     const JPH::TransformedShape* joltResult = collector.GetContext();
+    //     result.bodyID = joltResult->mBodyID;
+
+    //     const JPH::Vec3 hitPosition = ray.GetPointOnRay(collector.GetEarlyOutFraction());
+        
+    //     // Calculate hit position
+    //     result.hitPosition = toGLMVec3(hitPosition);
+
+    //     // Get the normal at the hit point
+    //     // physicsSystem->GetBodyInterface().GetWorldSpaceSurfaceNormal(joltResult->mBodyID, joltResult.mSubShapeID2, hitPosition, joltNormal);
+    //     // const JPH::BodyLockInterfaceLocking bodyLockInterface = physicsSystem->GetBodyLockInterface();
+    //     JPH::Vec3 joltNormal = joltResult->GetWorldSpaceSurfaceNormal(joltResult.sub, hitPosition);
+    //     result.hitNormal = toGLMVec3(joltNormal);
+    // }
+
+    collector.Reset();
+    physicsSystem->GetBroadPhaseQuery().CastRay(ray, collector);
+
+    if ( collector.HadHit() )
+    {
+        // Access the result
+        const auto & hit = collector.mHit;
+        // hit is of type CollectorType::ResultType
+
+        // Compute hit position on the ray
+        float fraction = hit.mFraction;
+        JPH::Vec3 joltHitPos = ray.GetPointOnRay(fraction);
+
+        // Lock the body for read access
+        JPH::BodyLockRead lock(physicsSystem->GetBodyLockInterface(), hit.mBodyID);
+
+        if (lock.Succeeded())
+        {
+            const JPH::Body & body = lock.GetBody();
+
+            // Use SubShapeID2 from the hit result
+            JPH::Vec3 joltNormal = body.GetWorldSpaceSurfaceNormal(hit.mSubShapeID2, joltHitPos);
+            
+            // convert to glm etc.
+            result.hasHit = true;
+            result.bodyID = hit.mBodyID;
+            result.hitPosition = toGLMVec3(joltHitPos);
+            result.hitNormal = toGLMVec3(joltNormal);
+        }
+    }
+
+    return result;
 }

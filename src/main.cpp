@@ -30,6 +30,8 @@
 #include <ctime>
 #include <mutex>
 #include <map>
+#include <set>
+#include <glm/gtx/string_cast.hpp>
 
 #include <unordered_map>
 #include <utility>
@@ -226,6 +228,12 @@ private:
     float prevPanY = 0.0f;
     float panX = prevPanX;
     float panY = prevPanY;
+
+    // Painting state
+    bool isLeftMouseButtonPressed = false;
+    bool wasLeftMouseButtonPressed = false;
+    float paintYLevel = 0.0f;
+    std::set<glm::vec3> paintedVoxelsInStroke;
 
     void initWindow() {
         LOG("Initializing window");
@@ -1481,6 +1489,66 @@ private:
             }
             // --- End Physics Body Management ---
 
+            // Update mouse button state
+            wasLeftMouseButtonPressed = isLeftMouseButtonPressed;
+            isLeftMouseButtonPressed = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+
+            // Painting logic
+            if (editor.isPainting && isLeftMouseButtonPressed) {
+                double mouseX, mouseY;
+                glfwGetCursorPos(window, &mouseX, &mouseY);
+
+                // Convert mouse coordinates to normalized device coordinates
+                float ndcX = (float)(mouseX / swapChainExtent.width) * 2.0f - 1.0f;
+                float ndcY = (float)(mouseY / swapChainExtent.height) * 2.0f - 1.0f; // Y is inverted in Vulkan
+
+                glm::vec4 clipCoords = glm::vec4(ndcX, -ndcY, -1.0f, 1.0f); // -1.0 for Z to get near plane
+
+                glm::mat4 inverseProjection = glm::inverse(camera.getProjection(swapChainExtent.width / (float)swapChainExtent.height));
+                glm::vec4 eyeCoords = inverseProjection * clipCoords;
+                eyeCoords.z = -1.0f;
+                eyeCoords.w = 0.0f;
+
+                glm::mat4 inverseView = glm::inverse(camera.getView());
+                glm::vec4 worldCoords = inverseView * eyeCoords;
+                glm::vec3 rayDirection = glm::normalize(glm::vec3(worldCoords));
+
+                glm::vec3 rayOrigin = camera.position3D;
+
+                // Perform raycast
+                PhysicsSystem::RayCastResult rayCastResult = physicsSystem.castRay(rayOrigin, rayDirection);
+
+                if (rayCastResult.hasHit) {
+                    // On initial press, store the Y-level
+                    if (!wasLeftMouseButtonPressed) {
+                        paintYLevel = rayCastResult.hitPosition.y;
+                        paintedVoxelsInStroke.clear(); // Clear previous stroke
+                    }
+
+                    // Calculate the position for the new voxel
+                    glm::vec3 newVoxelPos = rayCastResult.hitPosition + rayCastResult.hitNormal * (Chunk::VOXEL_SIZE / 2.0f);
+                    newVoxelPos.y = paintYLevel; // Lock Y-coordinate
+
+                    // Quantize to voxel grid
+                    newVoxelPos.x = floor(newVoxelPos.x / Chunk::VOXEL_SIZE) * Chunk::VOXEL_SIZE;
+                    newVoxelPos.y = floor(newVoxelPos.y / Chunk::VOXEL_SIZE) * Chunk::VOXEL_SIZE;
+                    newVoxelPos.z = floor(newVoxelPos.z / Chunk::VOXEL_SIZE) * Chunk::VOXEL_SIZE;
+
+                    // Check if a voxel already exists at this position or if it was painted in this stroke
+                    if (paintedVoxelsInStroke.find(newVoxelPos) == paintedVoxelsInStroke.end() &&
+                        editor.chunkManager.getVoxelWorld(newVoxelPos).type == 0) { // Check if it's air
+                        
+                        // Add the voxel
+                        editor.chunkManager.setVoxelWorld(newVoxelPos, Chunk::VoxelData(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f), 1)); // Red voxel
+                        paintedVoxelsInStroke.insert(newVoxelPos);
+                    }
+                }
+            } else if (!isLeftMouseButtonPressed && wasLeftMouseButtonPressed) {
+                // Mouse button released, save modified chunks
+                editor.chunkManager.saveModifiedChunks();
+                paintedVoxelsInStroke.clear();
+            }
+
             // Start ImGui frame
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
@@ -1585,6 +1653,11 @@ private:
             if (ImGui::Button("Inspect Landscape Data")) {
                 editor.chunkManager.exportChunkDataToTextFile("world_data/chunk_0_0_0.dat", "chunk_0_0_0.txt");
             }
+
+            if (ImGui::Button("Paint Voxels")) {
+                editor.isPainting = !editor.isPainting;
+            }
+            ImGui::Text(editor.isPainting ? "Painting enabled" : "Painting disabled");
 
             ImGui::Text("Active Physics Bodies %i", 
                         activePhysicsBodies.size());
