@@ -132,6 +132,10 @@ struct alignas(16) UniformBufferObject {
     glm::mat4 proj;
 };
 
+struct MeshPushConstants {
+	glm::mat4 model;
+};
+
 std::string matrixToString(const glm::mat4& matrix) {
     std::stringstream ss;
     ss << std::fixed << std::setprecision(4);
@@ -255,6 +259,8 @@ private:
         physicsSystem.init();
 
         LOG("Continuing Vulkan Initialization...");
+
+        // LOG("MeshPushConstants size " + std::to_string(sizeof(MeshPushConstants)));
 
         createDescriptorSetLayout();
         createGraphicsPipeline();
@@ -859,9 +865,14 @@ private:
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
+        // // Update view/proj once per frame
+        // updateUniformBuffer(currentFrame);
+        // vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+
         // Update view/proj once per frame
         updateUniformBuffer(currentFrame);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+
 
         // Render chunks
         for (const auto& pair : editor.chunkManager.getLoadedChunks()) {
@@ -875,7 +886,12 @@ private:
 
                 // Push model matrix for this chunk
                 glm::mat4 chunkModel = glm::mat4(1.0f);
-                vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &chunkModel);
+
+                MeshPushConstants constants{};
+                constants.model = chunkModel;
+
+                vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &constants);
+
 
                 VkBuffer vertexBuffers[] = {chunkVertexBuffers[coord].first};
                 VkDeviceSize offsets[] = {0};
@@ -887,8 +903,12 @@ private:
 
         // Render player
         if (editor.playerCharacter) {
-            glm::mat4 playerModel = editor.playerCharacter->getModelMatrix();
-            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &playerModel);
+            // glm::mat4 playerModel = editor.playerCharacter->getModelMatrix();
+
+            MeshPushConstants constants{};
+            constants.model = editor.playerCharacter->getModelMatrix();
+
+            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &constants);
 
             VkBuffer vertexBuffers[] = {playerVertexBuffer};
             VkDeviceSize offsets[] = {0};
@@ -1098,9 +1118,9 @@ private:
         rasterizer.rasterizerDiscardEnable = VK_FALSE;
         rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
         rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        // rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
         // rasterizer.cullMode = VK_CULL_MODE_NONE;
-        // rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT; // works with a single voxel, still bad for many
+        rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT; // works with a single voxel, still bad for many
         rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
         rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -1142,7 +1162,7 @@ private:
         VkPushConstantRange pushConstantRange{};
         pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         pushConstantRange.offset = 0;
-        pushConstantRange.size = sizeof(glm::mat4);
+        pushConstantRange.size = sizeof(MeshPushConstants);
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1164,7 +1184,7 @@ private:
         pipelineInfo.pViewportState = &viewportState;
         pipelineInfo.pRasterizationState = &rasterizer;
         pipelineInfo.pMultisampleState = &multisampling;
-        pipelineInfo.pDepthStencilState = &depthStencil;
+        // pipelineInfo.pDepthStencilState = &depthStencil;
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.layout = pipelineLayout;
         pipelineInfo.renderPass = renderPass;

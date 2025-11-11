@@ -75,4 +75,18 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 # Copy assets or shaders to build directory if needed
 # file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders DESTINATION ${CMAKE_BINARY_DIR})
+# file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders DESTINATION ${CMAKE_BINARY_DIR})
+
+# Would hate to have stale shaders in build dir!
+set(SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
+set(SHADER_OUTPUT_DIR ${CMAKE_BINARY_DIR}/shaders)
+
+file(GLOB SHADER_FILES ${SHADER_DIR}/*.vert ${SHADER_DIR}/*.frag)
+
+add_custom_target(copy_shaders ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SHADER_DIR} ${SHADER_OUTPUT_DIR}
+    COMMENT "Copying shaders..."
+)
+
+# Make your executable depend on them
+add_dependencies(${PROJECT_NAME} copy_shaders)
