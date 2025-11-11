@@ -1,17 +1,22 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include "Transform.h"
 
 class Sphere {
 public:
-    Sphere(const glm::vec3& position, float radius);
-    ~Sphere();
+    Transform transform;
 
-    void setPosition(const glm::vec3& position);
-    glm::vec3 getPosition() const;
-    float getRadius() const;
+    Sphere() = default;
+    Sphere(const glm::vec3& position, float radius) {
+        transform.position = position;
+        // transform.scale = glm::vec3(radius); // makes no sense
+    }
 
-private:
-    glm::vec3 position;
-    float radius;
+    void setPosition(const glm::vec3& position) {
+        transform.position = position;
+    }
+
+    glm::vec3 getPosition() const {
+        return transform.position;
+    }
 };

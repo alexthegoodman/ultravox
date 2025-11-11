@@ -249,7 +249,7 @@ private:
     void createPlayerBuffers() {
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
-        createSphereMesh(vertices, indices, 20, 20);
+        createSphereMesh(vertices, indices, 20, 20, 0.5f);
         playerIndexCount = static_cast<uint32_t>(indices.size());
 
         // Create vertex buffer
@@ -838,8 +838,6 @@ private:
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-
         // Render all loaded chunks
         for (const auto& pair : editor.chunkManager.getLoadedChunks()) {
             const Chunk::ChunkCoord& coord = pair.first;
@@ -850,6 +848,9 @@ private:
                 if (chunk->isDirty() || chunkVertexBuffers.find(coord) == chunkVertexBuffers.end()) {
                     updateChunkBuffers(coord, chunk->getVertices(), chunk->getIndices());
                 }
+
+                updateUniformBuffer(currentFrame, glm::mat4(1.0f));
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
                 // Bind vertex buffer
                 VkBuffer vertexBuffers[] = {chunkVertexBuffers[coord].first};
@@ -866,6 +867,9 @@ private:
 
         // Render player
         if (editor.playerCharacter) {
+            updateUniformBuffer(currentFrame, editor.playerCharacter->getModelMatrix());
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+
             VkBuffer vertexBuffers[] = {playerVertexBuffer};
             VkDeviceSize offsets[] = {0};
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
@@ -895,8 +899,6 @@ private:
         } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
             throw std::runtime_error("Failed to acquire swap chain image!");
         }
-
-        updateUniformBuffer(currentFrame); // NOTE: just updates the camera related data for now
 
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
@@ -980,29 +982,12 @@ private:
     }
 
     void initializeUniformBuffers() {
-        UniformBufferObject ubo{};
-        ubo.model = glm::mat4(1.0f);
-        ubo.view  = camera.getView();
-        ubo.proj  = camera.getProjection(swapChainExtent.width / (float) swapChainExtent.height);
-        ubo.proj[1][1] *= -1;
-
-        for (size_t i = 0; i < uniformBuffersAllocations.size(); i++) {
-            void* data;
-            vmaMapMemory(allocator, uniformBuffersAllocations[i], &data);
-            memcpy(data, &ubo, sizeof(ubo));
-            vmaUnmapMemory(allocator, uniformBuffersAllocations[i]);
-        }
+        updateUniformBuffer(currentFrame, glm::mat4(1.0f));
     }
 
-    void updateUniformBuffer(uint32_t currentImage) {
-        static auto startTime = std::chrono::high_resolution_clock::now();
-
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
+    void updateUniformBuffer(uint32_t currentImage, glm::mat4 modelMatrix) {
         UniformBufferObject ubo{};
-        // ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // causes unwanted spinning!
-        ubo.model = glm::mat4(1.0f);
+        ubo.model = modelMatrix;
         ubo.view = camera.getView();
         ubo.proj = camera.getProjection(swapChainExtent.width / (float) swapChainExtent.height);
         ubo.proj[1][1] *= -1;
@@ -1504,6 +1489,8 @@ private:
                     movement = glm::normalize(movement) * 5.0f;
                 }
                 editor.playerCharacter->setLinearVelocity(movement);
+
+                editor.playerCharacter->update();
 
                 // Update camera to follow player
                 glm::vec3 playerPos = editor.playerCharacter->getPosition();

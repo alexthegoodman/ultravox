@@ -63,11 +63,9 @@ inline Vector3 toCustomVector3(const glm::vec3& v) {
     return Vector3(v.x, v.y, v.z);
 }
 
-inline void createSphereMesh(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, int latitudeSegments, int longitudeSegments) {
+inline void createSphereMesh(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, int latitudeSegments, int longitudeSegments, float radius) {
     vertices.clear();
     indices.clear();
-
-    float radius = 1.0f;
 
     for (int i = 0; i <= latitudeSegments; ++i) {
         float theta = i * M_PI / latitudeSegments;

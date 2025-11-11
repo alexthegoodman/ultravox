@@ -12,6 +12,12 @@ PlayerCharacter::~PlayerCharacter() {
     physicsSystem.destroyCharacter(character);
 }
 
+void PlayerCharacter::update() {
+    if (character) {
+        sphere.setPosition(getPosition());
+    }
+}
+
 void PlayerCharacter::setLinearVelocity(const glm::vec3& velocity) {
     if (character) {
         character->SetLinearVelocity(JPH::Vec3(velocity.x, velocity.y, velocity.z));
@@ -24,4 +30,8 @@ glm::vec3 PlayerCharacter::getPosition() const {
         return glm::vec3(float(pos.GetX()), float(pos.GetY()), float(pos.GetZ()));
     }
     return glm::vec3(0.0f);
+}
+
+glm::mat4 PlayerCharacter::getModelMatrix() const {
+    return sphere.transform.getModelMatrix();
 }
