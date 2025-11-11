@@ -1334,7 +1334,9 @@ private:
                 editor.playerCharacter->setLinearVelocity(movement);
             }
 
-            physicsSystem.update(deltaTime, 1);
+            if (editor.isPlayingPreview) {
+                physicsSystem.update(deltaTime, 1);
+            }
 
             if (editor.playerCharacter) {
                 editor.playerCharacter->update();
@@ -1342,6 +1344,7 @@ private:
                 // Update camera to follow player
                 if (editor.isPlayingPreview) {
                     glm::vec3 playerPos = editor.playerCharacter->getPosition();
+                    // glm::vec3 playerPos = editor.playerCharacter->sphere.getPosition();
                     glm::vec3 newPos = playerPos + glm::vec3(0.0f, 2.0f, 5.0f);
                     camera.setPosition(newPos.x, newPos.y, newPos.z);
                     camera.lookAt(playerPos);
@@ -1509,7 +1512,7 @@ private:
 
             if (ImGui::Button("Add Character")) {
                 if (!editor.playerCharacter) {
-                    editor.playerCharacter = std::make_unique<PlayerCharacter>(physicsSystem, glm::vec3(0.0f, 10.0f, 0.0f));
+                    editor.playerCharacter = std::make_unique<PlayerCharacter>(physicsSystem, glm::vec3(4.0f, 4.0f, 4.0f));
                 }
             }
 
