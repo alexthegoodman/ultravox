@@ -1521,7 +1521,8 @@ private:
                 if (rayCastResult.hasHit) {
                     // On initial press, store the Y-level
                     if (!wasLeftMouseButtonPressed) {
-                        paintYLevel = rayCastResult.hitPosition.y;
+                        // paintYLevel = rayCastResult.hitPosition.y;
+                        paintYLevel = rayCastResult.hitPosition.y + Chunk::VOXEL_SIZE;
                         paintedVoxelsInStroke.clear(); // Clear previous stroke
                     }
 
@@ -1534,10 +1535,14 @@ private:
                     newVoxelPos.y = floor(newVoxelPos.y / Chunk::VOXEL_SIZE) * Chunk::VOXEL_SIZE;
                     newVoxelPos.z = floor(newVoxelPos.z / Chunk::VOXEL_SIZE) * Chunk::VOXEL_SIZE;
 
+                    LOG("NEW VOXEL COORDS: " + std::to_string(newVoxelPos.x) + " " + std::to_string(newVoxelPos.y) + " " + std::to_string(newVoxelPos.z) + " ");
+
                     // Check if a voxel already exists at this position or if it was painted in this stroke
                     if (paintedVoxelsInStroke.find(newVoxelPos) == paintedVoxelsInStroke.end() &&
                         editor.chunkManager.getVoxelWorld(newVoxelPos).type == 0) { // Check if it's air
                         
+                        LOG("Add Voxel!");
+
                         // Add the voxel
                         editor.chunkManager.setVoxelWorld(newVoxelPos, Chunk::VoxelData(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f), 1)); // Red voxel
                         paintedVoxelsInStroke.insert(newVoxelPos);
@@ -1545,8 +1550,9 @@ private:
                 }
             } else if (!isLeftMouseButtonPressed && wasLeftMouseButtonPressed) {
                 // Mouse button released, save modified chunks
-                editor.chunkManager.saveModifiedChunks();
-                paintedVoxelsInStroke.clear();
+                // TODO: enable this after testing
+                // editor.chunkManager.saveModifiedChunks();
+                // paintedVoxelsInStroke.clear();
             }
 
             // Start ImGui frame

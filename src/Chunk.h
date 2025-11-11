@@ -66,6 +66,13 @@ public:
           isEmpty(true) {
         voxels.resize(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE);
     }
+
+    void fillVoxels(const VoxelData& voxel) {
+        for (int x = 0; x < CHUNK_SIZE; ++x)
+            for (int y = 0; y < CHUNK_SIZE; ++y)
+                for (int z = 0; z < CHUNK_SIZE; ++z)
+                    setVoxel(x, y, z, voxel);
+    }
     
     // Get world position of chunk origin
     glm::vec3 getWorldPosition() const {
