@@ -189,7 +189,8 @@ JPH::Character* PhysicsSystem::createCharacter(const glm::vec3& position) {
     settings->mGravityFactor = 1.0f;
 
     JPH::Character* character = new JPH::Character(settings, toJPHVec3(position), JPH::Quat::sIdentity(), 0, physicsSystem);
-    // character->Create();
+    character->AddToPhysicsSystem(JPH::EActivation::Activate);
+    
     return character;
 }
 
