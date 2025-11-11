@@ -14,8 +14,9 @@ public:
     glm::vec3 getPosition() const;
     glm::mat4 getModelMatrix() const;
 
-private:
-    PhysicsSystem& physicsSystem;
     JPH::Character* character;
     Sphere sphere;
+
+private:
+    PhysicsSystem& physicsSystem;
 };

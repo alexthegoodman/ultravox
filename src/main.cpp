@@ -192,15 +192,10 @@ private:
     // Camera control variables for ImGui
     float currentPitch = 0.0f;
     float currentYaw = 0.0f;
-    float panX = 0.0f;
-    float panY = 0.0f;
-
-    // void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage, VkBuffer& buffer, VmaAllocation& allocation);
-    // void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-
-    // void createChunkBuffers(const Chunk::ChunkCoord& coord, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
-    // void updateChunkBuffers(const Chunk::ChunkCoord& coord, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
-    // void destroyChunkBuffers(const Chunk::ChunkCoord& coord);
+    float prevPanX = 0.0f;
+    float prevPanY = 0.0f;
+    float panX = prevPanX;
+    float panY = prevPanY;
 
     void initWindow() {
         LOG("Initializing window");
@@ -1404,15 +1399,38 @@ private:
             ImGui::SliderFloat("Yaw", &currentYaw, -180.0f, 180.0f);
             ImGui::SliderFloat("Zoom", &camera.zoom, 0.1f, 25.0f);
 
-            camera.setPitch(currentPitch);
-            camera.setYaw(currentYaw);
+            if (currentPitch != camera.getPitch()) {
+                camera.setPitch(currentPitch);
+            }
+            if (currentYaw != camera.getYaw()) {
+                camera.setYaw(currentYaw);
+            }
+
+            // ImGui::SliderFloat("Pan X", &panX, -3.0f, 3.0f);
+            // ImGui::SliderFloat("Pan Y", &panY, -3.0f, 3.0f);
+            // if (panX != 0.0f || panY != 0.0f) {
+            //     camera.pan(panX, panY);
+            //     panX = 0.0f; // Reset for incremental panning
+            //     panY = 0.0f; // Reset for incremental panning
+            // }
 
             ImGui::SliderFloat("Pan X", &panX, -3.0f, 3.0f);
             ImGui::SliderFloat("Pan Y", &panY, -3.0f, 3.0f);
-            if (panX != 0.0f || panY != 0.0f) {
-                camera.pan(panX, panY);
-                // panX = 0.0f; // Reset for incremental panning
-                // panY = 0.0f; // Reset for incremental panning
+
+            float deltaX = panX - prevPanX;
+            float deltaY = panY - prevPanY;
+
+            if (deltaX != 0.0f || deltaY != 0.0f) {
+                camera.pan(deltaX, deltaY);
+            }
+
+            prevPanX = panX;
+            prevPanY = panY;
+
+            // Optional: Add a reset button
+            if (ImGui::Button("Reset Pan")) {
+                prevPanX = 0.0f;
+                prevPanY = 0.0f;
             }
 
             if (ImGui::Button("Reset Camera")) {
@@ -1514,6 +1532,10 @@ private:
         LOG("Starting cleanup");
 
         // editor.chunkManager.saveAllChunks(); ? or perhaps autosave is more appropriate
+
+        if (editor.playerCharacter) {
+            physicsSystem.destroyCharacter(editor.playerCharacter->character);
+        }
 
         // Destroy all chunk buffers
         for (auto const& [coord, bufferPair] : chunkVertexBuffers) {

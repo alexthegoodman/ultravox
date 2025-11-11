@@ -92,31 +92,81 @@ public:
         updateTarget();
     }
 
+    // // Get current pitch in degrees
+    // float getPitch() const {
+    //     glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
+    //     return euler.x; // Pitch is typically around the X-axis
+    // }
+
+    // // Get current yaw in degrees
+    // float getYaw() const {
+    //     glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
+    //     return euler.y; // Yaw is typically around the Y-axis
+    // }
+
+    // // Set pitch directly
+    // void setPitch(float angleDegrees) {
+    //     glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
+    //     euler.x = angleDegrees;
+    //     rotation = glm::normalize(glm::quat(glm::radians(euler)));
+    //     updateTarget();
+    // }
+
+    // // Set yaw directly
+    // void setYaw(float angleDegrees) {
+    //     glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
+    //     euler.y = angleDegrees;
+    //     rotation = glm::normalize(glm::quat(glm::radians(euler)));
+    //     updateTarget();
+    // }
+
     // Get current pitch in degrees
     float getPitch() const {
-        glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
-        return euler.x; // Pitch is typically around the X-axis
+        // Extract pitch from quaternion without converting to Euler
+        glm::vec3 forward = rotation * glm::vec3(0.0f, 0.0f, -1.0f);
+        forward = glm::normalize(forward);
+        
+        // Calculate pitch angle from the forward vector's y component
+        float pitch = glm::degrees(asin(forward.y));
+        return pitch;
     }
 
     // Get current yaw in degrees
     float getYaw() const {
-        glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
-        return euler.y; // Yaw is typically around the Y-axis
+        // Extract yaw from quaternion without converting to Euler
+        glm::vec3 forward = rotation * glm::vec3(0.0f, 0.0f, -1.0f);
+        forward = glm::normalize(forward);
+        
+        // Calculate yaw angle from the forward vector's x and z components
+        float yaw = glm::degrees(atan2(forward.x, -forward.z));
+        return yaw;
     }
 
     // Set pitch directly
     void setPitch(float angleDegrees) {
-        glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
-        euler.x = angleDegrees;
-        rotation = glm::normalize(glm::quat(glm::radians(euler)));
+        // Get current yaw to preserve it
+        float currentYaw = getYaw();
+        
+        // Build rotation from scratch using pitch and yaw
+        glm::quat yawQuat = glm::angleAxis(glm::radians(currentYaw), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::quat pitchQuat = glm::angleAxis(glm::radians(angleDegrees), glm::vec3(1.0f, 0.0f, 0.0f));
+        
+        // Apply yaw first, then pitch
+        rotation = glm::normalize(yawQuat * pitchQuat);
         updateTarget();
     }
 
     // Set yaw directly
     void setYaw(float angleDegrees) {
-        glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
-        euler.y = angleDegrees;
-        rotation = glm::normalize(glm::quat(glm::radians(euler)));
+        // Get current pitch to preserve it
+        float currentPitch = getPitch();
+        
+        // Build rotation from scratch using pitch and yaw
+        glm::quat yawQuat = glm::angleAxis(glm::radians(angleDegrees), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::quat pitchQuat = glm::angleAxis(glm::radians(currentPitch), glm::vec3(1.0f, 0.0f, 0.0f));
+        
+        // Apply yaw first, then pitch
+        rotation = glm::normalize(yawQuat * pitchQuat);
         updateTarget();
     }
 
