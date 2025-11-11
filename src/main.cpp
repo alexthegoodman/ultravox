@@ -1491,6 +1491,7 @@ private:
             if (editor.isPlayingPreview && editor.playerCharacter) {
                 glm::vec3 movement(0.0f);
                 if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+                    // LOG("W (FORWARD) PRESS");
                     movement.z -= 1.0f;
                 }
                 if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
@@ -1506,8 +1507,8 @@ private:
                 if (glm::length(movement) > 0.0f) {
                     movement = glm::normalize(movement) * 5.0f;
                 }
+                
                 editor.playerCharacter->setLinearVelocity(movement);
-
                 editor.playerCharacter->update();
 
                 // Update camera to follow player
@@ -1571,11 +1572,12 @@ private:
 
         vkDestroyRenderPass(device, renderPass, nullptr);
 
-        if (editor.playerCharacter) {
-            physicsSystem.destroyCharacter(editor.playerCharacter->character);
-        }
-
         physicsSystem.shutdown();
+
+        // causes exception, although its problematic not to destroy it?
+        // if (editor.playerCharacter) {
+        //     physicsSystem.destroyCharacter(editor.playerCharacter->character);
+        // }
 
         vkDestroyDevice(device, nullptr);
 

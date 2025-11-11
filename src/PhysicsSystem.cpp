@@ -167,8 +167,8 @@ JPH::Character* PhysicsSystem::createCharacter(const glm::vec3& position) {
     }
 
     // 1. Define shape settings (e.g., a capsule)
-    float character_height = 1.8f;
-    float character_radius = 0.4f;
+    float character_height = 0.5f;
+    float character_radius = 0.5f;
     JPH::Ref<JPH::ShapeSettings> shape_settings = new JPH::CapsuleShapeSettings(character_height / 2.0f, character_radius);
 
     // 2. Create the shape (this "cooks" the shape into an optimized format)
