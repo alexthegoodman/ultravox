@@ -57,7 +57,13 @@ public:
                     
                     // Check if within sphere (not cube)
                     float dist = glm::length(glm::vec3(x, y, z));
-                    if (dist <= loadRadius && loadedChunks.find(coord) == loadedChunks.end()) {
+                    // if (dist <= loadRadius && loadedChunks.find(coord) == loadedChunks.end()) {
+                    //     chunksToLoad.push_back(coord);
+                    // }
+
+                    if (dist <= loadRadius &&
+                        loadedChunks.find(coord) == loadedChunks.end() &&
+                        missingChunks.find(coord) == missingChunks.end()) {
                         chunksToLoad.push_back(coord);
                     }
                 }
@@ -126,6 +132,7 @@ public:
             if (!chunk) {
                 // Create an empty chunk to hold new voxel edits
                 chunk = createEmptyChunk(chunkCoord);
+                
                 LOG("Created new chunk at " + std::to_string(chunkCoord.x) + ", " + std::to_string(chunkCoord.y) + ", " + std::to_string(chunkCoord.z));
             }
         }
@@ -373,6 +380,7 @@ public:
 private:
     std::unordered_map<Chunk::ChunkCoord, std::unique_ptr<Chunk>> loadedChunks;
     std::unordered_set<Chunk::ChunkCoord> modifiedChunks;
+    std::unordered_set<Chunk::ChunkCoord> missingChunks;
     std::string worldDataPath;
     int loadRadius;
     int unloadRadius;
@@ -411,89 +419,93 @@ private:
     }
     
     // Load chunk from disk or create new
-    // Chunk* loadOrCreateChunk(const Chunk::ChunkCoord& coord) {
-    //     auto chunk = std::make_unique<Chunk>(coord);
-    //     std::string filePath = getChunkFilePath(coord);
-        
-    //     bool loadedFromDisk = false;
-    //     if (std::filesystem::exists(filePath)) {
-    //         std::ifstream file(filePath, std::ios::binary);
-    //         if (file.is_open() && chunk->loadFromBinary(file)) {
-    //             LOG("Loaded chunk from disk: " + filePath);
-    //             loadedFromDisk = true;
-    //         }
-    //         file.close();
-    //     } 
-        
-    //     if (loadedFromDisk) {
-    //         // If loaded from disk, populate physicsOctree with existing solid voxels
-    //         glm::vec3 chunkWorldPos = chunk->getWorldPosition();
-    //         for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
-    //             for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
-    //                 for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
-    //                     if (chunk->isSolid(x, y, z)) {
-    //                         glm::vec3 voxelWorldPos = chunkWorldPos + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
-    //                         Chunk::PhysicsVoxelData physicsData(voxelWorldPos, Chunk::VOXEL_SIZE, chunk->getVoxel(x, y, z).type);
-    //                         physicsOctree.insert(Vector3(voxelWorldPos.x, voxelWorldPos.y, voxelWorldPos.z), physicsData);
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     } 
-    //     // we dont want this, we are not doing infinite worlds, just loading from disk
-    //     // else {
-    //     //     // Generate new terrain for this chunk (which also populates the octree)
-    //     //     generateTerrain(chunk.get());
-    //     //     LOG("Generated new chunk: " + filePath);
-    //     // }
-        
-    //     Chunk* ptr = chunk.get();
-    //     loadedChunks[coord] = std::move(chunk);
-    //     return ptr;
-    // }
-
     Chunk* loadChunk2(const Chunk::ChunkCoord& coord) {
-        std::string filePath = getChunkFilePath(coord);
-
-        if (!std::filesystem::exists(filePath)) {
-            // No chunk file exists — don't create one
-            LOG("Chunk file not found: " + filePath);
-            return nullptr;
-        }
-
         auto chunk = std::make_unique<Chunk>(coord);
+        std::string filePath = getChunkFilePath(coord);
+        
         bool loadedFromDisk = false;
-
-        std::ifstream file(filePath, std::ios::binary);
-        if (file.is_open() && chunk->loadFromBinary(file)) {
-            LOG("Loaded chunk from disk: " + filePath);
-            loadedFromDisk = true;
-        }
-        file.close();
-
-        if (!loadedFromDisk) {
-            LOG("Failed to load chunk from file: " + filePath);
-            return nullptr;
-        }
-
-        // Populate physicsOctree with solid voxels
-        glm::vec3 chunkWorldPos = chunk->getWorldPosition();
-        for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
-            for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
-                for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
-                    if (chunk->isSolid(x, y, z)) {
-                        glm::vec3 voxelWorldPos = chunkWorldPos + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
-                        Chunk::PhysicsVoxelData physicsData(voxelWorldPos, Chunk::VOXEL_SIZE, chunk->getVoxel(x, y, z).type);
-                        physicsOctree.insert(Vector3(voxelWorldPos.x, voxelWorldPos.y, voxelWorldPos.z), physicsData);
+        if (std::filesystem::exists(filePath)) {
+            std::ifstream file(filePath, std::ios::binary);
+            if (file.is_open() && chunk->loadFromBinary(file)) {
+                LOG("Loaded chunk from disk: " + filePath);
+                loadedFromDisk = true;
+            }
+            file.close();
+        } 
+        
+        if (loadedFromDisk) {
+            // If loaded from disk, populate physicsOctree with existing solid voxels
+            glm::vec3 chunkWorldPos = chunk->getWorldPosition();
+            for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
+                for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
+                    for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
+                        if (chunk->isSolid(x, y, z)) {
+                            glm::vec3 voxelWorldPos = chunkWorldPos + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
+                            Chunk::PhysicsVoxelData physicsData(voxelWorldPos, Chunk::VOXEL_SIZE, chunk->getVoxel(x, y, z).type);
+                            physicsOctree.insert(Vector3(voxelWorldPos.x, voxelWorldPos.y, voxelWorldPos.z), physicsData);
+                        }
                     }
                 }
             }
+        } else {
+            missingChunks.insert(coord); // Cache the miss
+            return nullptr;
         }
 
+        // we dont want this, we are not doing infinite worlds, just loading from disk
+        // else {
+        //     // Generate new terrain for this chunk (which also populates the octree)
+        //     generateTerrain(chunk.get());
+        //     LOG("Generated new chunk: " + filePath);
+        // }
+        
         Chunk* ptr = chunk.get();
         loadedChunks[coord] = std::move(chunk);
         return ptr;
     }
+
+    // Chunk* loadChunk2(const Chunk::ChunkCoord& coord) {
+    //     std::string filePath = getChunkFilePath(coord);
+
+    //     if (!std::filesystem::exists(filePath)) {
+    //         // No chunk file exists — don't create one
+    //         // LOG("Chunk file not found: " + filePath);
+    //         return nullptr;
+    //     }
+
+    //     auto chunk = std::make_unique<Chunk>(coord);
+    //     bool loadedFromDisk = false;
+
+    //     std::ifstream file(filePath, std::ios::binary);
+    //     if (file.is_open() && chunk->loadFromBinary(file)) {
+    //         LOG("Loaded chunk from disk: " + filePath);
+    //         loadedFromDisk = true;
+    //     }
+    //     file.close();
+
+    //     if (!loadedFromDisk) {
+    //         LOG("Failed to load chunk from file: " + filePath);
+    //         return nullptr;
+    //     }
+
+    //     // Populate physicsOctree with solid voxels
+    //     glm::vec3 chunkWorldPos = chunk->getWorldPosition();
+    //     for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
+    //         for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
+    //             for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
+    //                 if (chunk->isSolid(x, y, z)) {
+    //                     glm::vec3 voxelWorldPos = chunkWorldPos + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
+    //                     Chunk::PhysicsVoxelData physicsData(voxelWorldPos, Chunk::VOXEL_SIZE, chunk->getVoxel(x, y, z).type);
+    //                     physicsOctree.insert(Vector3(voxelWorldPos.x, voxelWorldPos.y, voxelWorldPos.z), physicsData);
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     Chunk* ptr = chunk.get();
+    //     loadedChunks[coord] = std::move(chunk);
+    //     return ptr;
+    // }
     
     Chunk* createEmptyChunk(const Chunk::ChunkCoord& coord) {
         // Safety check: avoid overwriting existing chunks
@@ -518,6 +530,7 @@ private:
 
         // Mark as modified so that it will be saved when the user finishes painting
         modifiedChunks.insert(coord);
+        missingChunks.erase(coord);
 
         // Store in loadedChunks map
         Chunk* ptr = chunk.get();
