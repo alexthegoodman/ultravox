@@ -222,7 +222,7 @@ private:
 
     // Map to store active Jolt physics bodies, keyed by voxel world position
     std::map<glm::vec3, JPH::BodyID> activePhysicsBodies;
-    float physicsActivationRadius = 10.0f; // Define the radius around the camera for active physics bodies
+    float physicsActivationRadius = 24.0f; // Define the radius around the camera for active physics bodies
 
     // Camera control variables for ImGui
     float currentPitch = 0.0f;
@@ -1172,6 +1172,10 @@ private:
         vmaDestroyImage(allocator, depthImage, depthImageAllocation);
         vkFreeMemory(device, depthImageMemory, nullptr);
 
+        for (auto framebuffer : swapChainFramebuffers) {
+            vkDestroyFramebuffer(device, framebuffer, nullptr);
+        }
+
         for (auto imageView : swapChainImageViews) {
             vkDestroyImageView(device, imageView, nullptr);
         }
@@ -1179,7 +1183,6 @@ private:
         vkDestroySwapchainKHR(device, swapChain, nullptr);
         vkDestroyPipeline(device, graphicsPipeline, nullptr);
         vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-    // }
 
         // vkDeviceWaitIdle(device);
     }
@@ -1676,9 +1679,8 @@ private:
                 }
             } else if (!isLeftMouseButtonPressed && wasLeftMouseButtonPressed) {
                 // Mouse button released, save modified chunks
-                // TODO: enable this after testing
-                // editor.chunkManager.saveModifiedChunks();
-                // paintedVoxelsInStroke.clear();
+                editor.chunkManager.saveModifiedChunks();
+                paintedVoxelsInStroke.clear();
             }
 
             // Start ImGui frame
