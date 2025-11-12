@@ -1646,7 +1646,7 @@ private:
                 glm::vec3 rayOrigin = camera.position3D;
 
                 // Perform raycast
-                PhysicsSystem::RayCastResult rayCastResult = physicsSystem.castRay(rayOrigin, rayDirection);
+                PhysicsSystem::RayCastResult rayCastResult = editor.chunkManager.castRay(rayOrigin, rayDirection);
 
                 if (rayCastResult.hasHit) {
                     // On initial press, store the Y-level

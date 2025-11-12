@@ -1,5 +1,7 @@
 #pragma once
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <unordered_map>
 #include <memory>
 #include <string>
@@ -10,11 +12,15 @@
 #include <fstream>
 #include <iomanip>
 
+#include "ChunkManager.h"
+#include <glm/glm.hpp>
+#include <glm/gtx/norm.hpp> // For glm::length2
+
 #include "Chunk.h"
 #include "Logger.h"
 #include "helpers.h"
 #include "Octree.h" // Include Octree implementation
-#include "PhysicsSystem.h" // For JPH::Vec3 conversion
+#include "PhysicsSystem.h" // For PhysicsSystem::RayCastResult
 
 // Custom hash for ChunkCoord
 namespace std {
@@ -372,8 +378,8 @@ public:
     // Get the radius (not in world units, but in number of chunks)
     int getLoadRadius() const { return loadRadius; }
 
-    // Get the radius (not in world units, but in number of chunks)
-    int getUnloadRadius() const { return unloadRadius; }
+    // Raycasting method
+    PhysicsSystem::RayCastResult castRay(const glm::vec3& origin, const glm::vec3& direction);
 
     
 
@@ -599,3 +605,135 @@ private:
 
     
 };
+
+
+// Helper function for ray-AABB intersection
+// Returns true if ray intersects AABB, and sets t_min, hit_normal
+bool intersectRayAABB(const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
+                      const glm::vec3& aabbMin, const glm::vec3& aabbMax,
+                      float& t_min, glm::vec3& hit_normal) {
+    glm::vec3 invDir = 1.0f / rayDirection;
+    glm::vec3 t0 = (aabbMin - rayOrigin) * invDir;
+    glm::vec3 t1 = (aabbMax - rayOrigin) * invDir;
+
+    glm::vec3 t_min_vec = glm::min(t0, t1);
+    glm::vec3 t_max_vec = glm::max(t0, t1);
+
+    float t_enter = glm::max(glm::max(t_min_vec.x, t_min_vec.y), t_min_vec.z);
+    float t_exit = glm::min(glm::min(t_max_vec.x, t_max_vec.y), t_max_vec.z);
+
+    if (t_enter > t_exit || t_exit < 0.0f) {
+        return false; // No intersection or AABB is behind the ray
+    }
+
+    if (t_enter < 0.0f) { // Ray origin is inside the AABB
+        t_min = 0.0f; // Or a small epsilon to avoid self-intersection
+    } else {
+        t_min = t_enter;
+    }
+
+    // Calculate hit normal
+    glm::vec3 hitPoint = rayOrigin + rayDirection * t_min;
+    glm::vec3 center = (aabbMin + aabbMax) * 0.5f;
+    glm::vec3 dirToCenter = glm::normalize(hitPoint - center);
+
+    // Determine which face was hit
+    // This is a simplified approach and might not be perfectly accurate for all cases
+    // A more robust approach would compare t_enter with t_min_vec components
+    if (t_min == t_min_vec.x) hit_normal = (rayDirection.x < 0) ? glm::vec3(1, 0, 0) : glm::vec3(-1, 0, 0);
+    else if (t_min == t_min_vec.y) hit_normal = (rayDirection.y < 0) ? glm::vec3(0, 1, 0) : glm::vec3(0, -1, 0);
+    else if (t_min == t_min_vec.z) hit_normal = (rayDirection.z < 0) ? glm::vec3(0, 0, 1) : glm::vec3(0, 0, -1);
+    else hit_normal = glm::vec3(0,0,0); // Should not happen if t_min is one of t_min_vec components
+
+    return true;
+}
+
+
+PhysicsSystem::RayCastResult ChunkManager::castRay(const glm::vec3& rayOrigin, const glm::vec3& rayDirection) {
+    PhysicsSystem::RayCastResult result;
+    result.hasHit = false;
+    // result.bodyID = JPH::BodyID(); // No Jolt BodyID for voxel raycast
+    result.hitPosition = glm::vec3(0.0f);
+    result.hitNormal = glm::vec3(0.0f);
+
+    float minDistance = std::numeric_limits<float>::max();
+
+    // Voxel traversal parameters
+    glm::vec3 currentWorldPos = rayOrigin;
+    glm::ivec3 currentVoxel = glm::ivec3(floor(rayOrigin.x / Chunk::VOXEL_SIZE),
+                                         floor(rayOrigin.y / Chunk::VOXEL_SIZE),
+                                         floor(rayOrigin.z / Chunk::VOXEL_SIZE));
+
+    glm::vec3 step = glm::vec3(glm::sign(rayDirection.x), glm::sign(rayDirection.y), glm::sign(rayDirection.z));
+    glm::vec3 tMax; // distance along ray to next voxel boundary
+    glm::vec3 tDelta; // distance along ray to cross one voxel
+
+    // Initialize tMax and tDelta
+    for (int i = 0; i < 3; ++i) {
+        if (rayDirection[i] != 0.0f) {
+            if (step[i] > 0) { // Positive direction
+                tMax[i] = (static_cast<float>(currentVoxel[i] + 1) * Chunk::VOXEL_SIZE - rayOrigin[i]) / rayDirection[i];
+            } else { // Negative direction
+                tMax[i] = (static_cast<float>(currentVoxel[i]) * Chunk::VOXEL_SIZE - rayOrigin[i]) / rayDirection[i];
+            }
+            tDelta[i] = Chunk::VOXEL_SIZE / std::abs(rayDirection[i]);
+        } else {
+            tMax[i] = std::numeric_limits<float>::max(); // Ray is parallel to this axis
+            tDelta[i] = std::numeric_limits<float>::max();
+        }
+    }
+
+    // Max distance to check (e.g., 100 units)
+    float maxRayDistance = 100.0f;
+    float currentRayDistance = 0.0f;
+
+    while (currentRayDistance < maxRayDistance) {
+        // Get chunk and local voxel coordinates
+        glm::vec3 voxelWorldCenter = glm::vec3(currentVoxel.x + 0.5f, currentVoxel.y + 0.5f, currentVoxel.z + 0.5f) * Chunk::VOXEL_SIZE;
+        Chunk::ChunkCoord chunkCoord = worldToChunkCoord(voxelWorldCenter);
+        Chunk* chunk = getChunk(chunkCoord);
+
+        if (chunk) {
+            glm::ivec3 localVoxel = worldToLocalVoxel(voxelWorldCenter, chunkCoord);
+
+            if (chunk->isSolid(localVoxel.x, localVoxel.y, localVoxel.z)) {
+                // Found a solid voxel, now do precise intersection with its AABB
+                glm::vec3 aabbMin = glm::vec3(currentVoxel) * Chunk::VOXEL_SIZE;
+                glm::vec3 aabbMax = aabbMin + glm::vec3(Chunk::VOXEL_SIZE);
+
+                float t_hit;
+                glm::vec3 hit_normal;
+                if (intersectRayAABB(rayOrigin, rayDirection, aabbMin, aabbMax, t_hit, hit_normal)) {
+                    if (t_hit < minDistance) {
+                        minDistance = t_hit;
+                        result.hasHit = true;
+                        result.hitPosition = rayOrigin + rayDirection * t_hit;
+                        result.hitNormal = hit_normal;
+                        // No Jolt BodyID, so leave it default or set to an invalid value
+                        // result.bodyID = JPH::BodyID();
+                    }
+                }
+                // Since we found a hit, we can break early if we only care about the first hit
+                // If we need the closest hit among all traversed voxels, we continue
+                break; 
+            }
+        }
+
+        // Advance to the next voxel
+        if (tMax.x < tMax.y && tMax.x < tMax.z) {
+            currentVoxel.x += static_cast<int>(step.x);
+            currentRayDistance = tMax.x;
+            tMax.x += tDelta.x;
+        } else if (tMax.y < tMax.z) {
+            currentVoxel.y += static_cast<int>(step.y);
+            currentRayDistance = tMax.y;
+            tMax.y += tDelta.y;
+        } else {
+            currentVoxel.z += static_cast<int>(step.z);
+            currentRayDistance = tMax.z;
+            tMax.z += tDelta.z;
+        }
+    }
+
+    return result;
+}
