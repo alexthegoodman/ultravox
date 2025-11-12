@@ -152,20 +152,12 @@ public:
                     if (!isSolid(x, y, z + 1)) addFace(pos, voxel.color, 4); // Front
                     if (!isSolid(x, y, z - 1)) addFace(pos, voxel.color, 5); // Back
 
-                    // do all sides for now for testing
-                    // addFace(pos, voxel.color, 0); // Top
-                    // addFace(pos, voxel.color, 1); // Bottom
-                    // addFace(pos, voxel.color, 2); // Right
-                    // addFace(pos, voxel.color, 3); // Left
-                    // addFace(pos, voxel.color, 4); // Front
-                    // addFace(pos, voxel.color, 5); // Back
-
-                    // addFace(pos, glm::vec4(1.0f, 0.0f, 0.0f, 1.0f), 0); // Top
-                    // addFace(pos, glm::vec4(0.5f, 0.0f, 0.0f, 1.0f), 1); // Bottom
-                    // addFace(pos, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), 2); // Right
-                    // addFace(pos, glm::vec4(0.0f, 0.5f, 0.0f, 1.0f), 3); // Left
-                    // addFace(pos, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 4); // Front
-                    // addFace(pos, glm::vec4(0.0f, 0.0f, 0.5f, 1.0f), 5); // Back
+                    // if (!isSolid(x, y + 1, z)) addDoubleSidedFace(pos, voxel.color, 0); // Top
+                    // if (!isSolid(x, y - 1, z)) addDoubleSidedFace(pos, voxel.color, 1); // Bottom
+                    // if (!isSolid(x + 1, y, z)) addDoubleSidedFace(pos, voxel.color, 2); // Right
+                    // if (!isSolid(x - 1, y, z)) addDoubleSidedFace(pos, voxel.color, 3); // Left
+                    // if (!isSolid(x, y, z + 1)) addDoubleSidedFace(pos, voxel.color, 4); // Front
+                    // if (!isSolid(x, y, z - 1)) addDoubleSidedFace(pos, voxel.color, 5); // Back
 
                     // addCube(pos, voxel.color);
                 }
@@ -289,70 +281,145 @@ private:
         }
     }
 
+    // void addFace(const glm::vec3& pos, const glm::vec4& color, int faceIndex) {
+    //     uint32_t baseIndex = static_cast<uint32_t>(vertexCache.size());
+        
+    //     // Define face vertices based on direction
+    //     glm::vec3 vertices[4];
+    //     glm::vec3 normal;
+        
+    //     switch (faceIndex) {
+    //         case 0: // Top (+Y)
+    //             vertices[0] = pos + glm::vec3(0, VOXEL_SIZE, 0);
+    //             vertices[1] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, 0);
+    //             vertices[2] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
+    //             vertices[3] = pos + glm::vec3(0, VOXEL_SIZE, VOXEL_SIZE);
+    //             normal = glm::vec3(0, 1, 0);
+    //             break;
+    //         case 1: // Bottom (-Y)
+    //             vertices[0] = pos + glm::vec3(0, 0, 0);
+    //             vertices[1] = pos + glm::vec3(0, 0, VOXEL_SIZE);
+    //             vertices[2] = pos + glm::vec3(VOXEL_SIZE, 0, VOXEL_SIZE);
+    //             vertices[3] = pos + glm::vec3(VOXEL_SIZE, 0, 0);
+    //             normal = glm::vec3(0, -1, 0);
+    //             break;
+    //         case 2: // Right (+X)
+    //             vertices[0] = pos + glm::vec3(VOXEL_SIZE, 0, 0);
+    //             vertices[1] = pos + glm::vec3(VOXEL_SIZE, 0, VOXEL_SIZE);
+    //             vertices[2] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
+    //             vertices[3] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, 0);
+    //             normal = glm::vec3(1, 0, 0);
+    //             break;
+    //         case 3: // Left (-X)
+    //             vertices[0] = pos + glm::vec3(0, 0, 0);
+    //             vertices[1] = pos + glm::vec3(0, VOXEL_SIZE, 0);
+    //             vertices[2] = pos + glm::vec3(0, VOXEL_SIZE, VOXEL_SIZE);
+    //             vertices[3] = pos + glm::vec3(0, 0, VOXEL_SIZE);
+    //             normal = glm::vec3(-1, 0, 0);
+    //             break;
+    //         case 4: // Front (+Z)
+    //             vertices[0] = pos + glm::vec3(0, 0, VOXEL_SIZE);
+    //             vertices[1] = pos + glm::vec3(0, VOXEL_SIZE, VOXEL_SIZE);
+    //             vertices[2] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
+    //             vertices[3] = pos + glm::vec3(VOXEL_SIZE, 0, VOXEL_SIZE);
+    //             normal = glm::vec3(0, 0, 1);
+    //             break;
+    //         case 5: // Back (-Z)
+    //             vertices[0] = pos + glm::vec3(0, 0, 0);
+    //             vertices[1] = pos + glm::vec3(VOXEL_SIZE, 0, 0);
+    //             vertices[2] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, 0);
+    //             vertices[3] = pos + glm::vec3(0, VOXEL_SIZE, 0);
+    //             normal = glm::vec3(0, 0, -1);
+    //             break;
+    //     }
+
+    //     for (int i = 0; i < 4; ++i) {
+    //         Vertex v;
+    //         v.position = vertices[i];
+    //         v.texCoords = glm::vec2(0.0f);      // Initialize (or use proper UVs)
+    //         v.color = color;
+    //         v.gradientCoords = glm::vec2(0.0f); // Initialize
+    //         v.objectType = 6.0f;                // 6 = solid voxel
+    //         v.normal = normal;
+    //         vertexCache.push_back(v);
+    //     }
+        
+    //     // Add indices (two triangles per face)
+    //     indexCache.push_back(baseIndex + 0);
+    //     indexCache.push_back(baseIndex + 1);
+    //     indexCache.push_back(baseIndex + 2);
+        
+    //     indexCache.push_back(baseIndex + 0);
+    //     indexCache.push_back(baseIndex + 2);
+    //     indexCache.push_back(baseIndex + 3);
+    // }
+
     void addFace(const glm::vec3& pos, const glm::vec4& color, int faceIndex) {
         uint32_t baseIndex = static_cast<uint32_t>(vertexCache.size());
         
         // Define face vertices based on direction
+        // Vertices are ordered counter-clockwise when viewed from outside
         glm::vec3 vertices[4];
         glm::vec3 normal;
         
         switch (faceIndex) {
-            case 0: // Top (+Y)
+            case 0: // Top (+Y) - looking down at it
                 vertices[0] = pos + glm::vec3(0, VOXEL_SIZE, 0);
-                vertices[1] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, 0);
-                vertices[2] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
-                vertices[3] = pos + glm::vec3(0, VOXEL_SIZE, VOXEL_SIZE);
-                normal = glm::vec3(0, 1, 0);
-                break;
-            case 1: // Bottom (-Y)
-                vertices[0] = pos + glm::vec3(0, 0, 0);
-                vertices[1] = pos + glm::vec3(0, 0, VOXEL_SIZE);
-                vertices[2] = pos + glm::vec3(VOXEL_SIZE, 0, VOXEL_SIZE);
-                vertices[3] = pos + glm::vec3(VOXEL_SIZE, 0, 0);
-                normal = glm::vec3(0, -1, 0);
-                break;
-            case 2: // Right (+X)
-                vertices[0] = pos + glm::vec3(VOXEL_SIZE, 0, 0);
-                vertices[1] = pos + glm::vec3(VOXEL_SIZE, 0, VOXEL_SIZE);
-                vertices[2] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
-                vertices[3] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, 0);
-                normal = glm::vec3(1, 0, 0);
-                break;
-            case 3: // Left (-X)
-                vertices[0] = pos + glm::vec3(0, 0, 0);
-                vertices[1] = pos + glm::vec3(0, VOXEL_SIZE, 0);
-                vertices[2] = pos + glm::vec3(0, VOXEL_SIZE, VOXEL_SIZE);
-                vertices[3] = pos + glm::vec3(0, 0, VOXEL_SIZE);
-                normal = glm::vec3(-1, 0, 0);
-                break;
-            case 4: // Front (+Z)
-                vertices[0] = pos + glm::vec3(0, 0, VOXEL_SIZE);
                 vertices[1] = pos + glm::vec3(0, VOXEL_SIZE, VOXEL_SIZE);
                 vertices[2] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
-                vertices[3] = pos + glm::vec3(VOXEL_SIZE, 0, VOXEL_SIZE);
-                normal = glm::vec3(0, 0, 1);
+                vertices[3] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, 0);
+                normal = glm::vec3(0, 1, 0);
                 break;
-            case 5: // Back (-Z)
+            case 1: // Bottom (-Y) - looking up at it
                 vertices[0] = pos + glm::vec3(0, 0, 0);
                 vertices[1] = pos + glm::vec3(VOXEL_SIZE, 0, 0);
-                vertices[2] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, 0);
+                vertices[2] = pos + glm::vec3(VOXEL_SIZE, 0, VOXEL_SIZE);
+                vertices[3] = pos + glm::vec3(0, 0, VOXEL_SIZE);
+                normal = glm::vec3(0, -1, 0);
+                break;
+            case 2: // Right (+X) - looking from the right
+                vertices[0] = pos + glm::vec3(VOXEL_SIZE, 0, 0);
+                vertices[1] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, 0);
+                vertices[2] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
+                vertices[3] = pos + glm::vec3(VOXEL_SIZE, 0, VOXEL_SIZE);
+                normal = glm::vec3(1, 0, 0);
+                break;
+            case 3: // Left (-X) - looking from the left
+                vertices[0] = pos + glm::vec3(0, 0, 0);
+                vertices[1] = pos + glm::vec3(0, 0, VOXEL_SIZE);
+                vertices[2] = pos + glm::vec3(0, VOXEL_SIZE, VOXEL_SIZE);
                 vertices[3] = pos + glm::vec3(0, VOXEL_SIZE, 0);
+                normal = glm::vec3(-1, 0, 0);
+                break;
+            case 4: // Front (+Z) - looking from the front
+                vertices[0] = pos + glm::vec3(0, 0, VOXEL_SIZE);
+                vertices[1] = pos + glm::vec3(VOXEL_SIZE, 0, VOXEL_SIZE);
+                vertices[2] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
+                vertices[3] = pos + glm::vec3(0, VOXEL_SIZE, VOXEL_SIZE);
+                normal = glm::vec3(0, 0, 1);
+                break;
+            case 5: // Back (-Z) - looking from the back
+                vertices[0] = pos + glm::vec3(0, 0, 0);
+                vertices[1] = pos + glm::vec3(0, VOXEL_SIZE, 0);
+                vertices[2] = pos + glm::vec3(VOXEL_SIZE, VOXEL_SIZE, 0);
+                vertices[3] = pos + glm::vec3(VOXEL_SIZE, 0, 0);
                 normal = glm::vec3(0, 0, -1);
                 break;
         }
 
+        // Add vertices
         for (int i = 0; i < 4; ++i) {
             Vertex v;
             v.position = vertices[i];
-            v.texCoords = glm::vec2(0.0f);      // Initialize (or use proper UVs)
+            v.texCoords = glm::vec2(0.0f);
             v.color = color;
-            v.gradientCoords = glm::vec2(0.0f); // Initialize
-            v.objectType = 6.0f;                // 6 = solid voxel
+            v.gradientCoords = glm::vec2(0.0f);
+            v.objectType = 6.0f;
             v.normal = normal;
             vertexCache.push_back(v);
         }
         
-        // Add indices (two triangles per face)
+        // Add indices (counter-clockwise winding)
         indexCache.push_back(baseIndex + 0);
         indexCache.push_back(baseIndex + 1);
         indexCache.push_back(baseIndex + 2);
@@ -362,4 +429,28 @@ private:
         indexCache.push_back(baseIndex + 3);
     }
 
+    // Alternative: If you truly need double-sided faces
+    void addDoubleSidedFace(const glm::vec3& pos, const glm::vec4& color, int faceIndex) {
+        // Add the normal face
+        addFace(pos, color, faceIndex);
+        
+        // Add the reverse face by duplicating vertices with flipped normal
+        uint32_t baseIndex = static_cast<uint32_t>(vertexCache.size());
+        
+        // Copy the last 4 vertices we just added
+        for (int i = 0; i < 4; ++i) {
+            Vertex v = vertexCache[vertexCache.size() - 4 + i];
+            v.normal = -v.normal; // Flip the normal
+            vertexCache.push_back(v);
+        }
+        
+        // Add indices with reversed winding order
+        indexCache.push_back(baseIndex + 0);
+        indexCache.push_back(baseIndex + 2);
+        indexCache.push_back(baseIndex + 1);
+        
+        indexCache.push_back(baseIndex + 0);
+        indexCache.push_back(baseIndex + 3);
+        indexCache.push_back(baseIndex + 2);
+    }
 };
