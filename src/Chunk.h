@@ -11,6 +11,7 @@ class Chunk {
 public:
     static constexpr int CHUNK_SIZE = 32; // 32x32x32 voxels per chunk
     static constexpr float VOXEL_SIZE = 1.0f;
+    bool meshDirty;
     
     struct ChunkCoord {
         int x, y, z;
@@ -56,7 +57,7 @@ private:
     // Cached mesh data
     std::vector<Vertex> vertexCache;
     std::vector<uint32_t> indexCache;
-    bool meshDirty;
+    
     bool isEmpty;
 
 public:
@@ -171,7 +172,7 @@ public:
             }
         }
         
-        meshDirty = false;
+        // meshDirty = false; // Moved to VulkanEngine::updateChunkBuffers
     }
     
     const std::vector<Vertex>& getVertices() const { return vertexCache; }

@@ -889,6 +889,7 @@ private:
 
             if (!chunk->empty()) {
                 if (chunk->isDirty() || chunkVertexBuffers.find(coord) == chunkVertexBuffers.end()) {
+                    LOG("chunk->isDirty() recordCommandBuffer: Drawing chunk at " + std::to_string(coord.x) + "," + std::to_string(coord.y) + "," + std::to_string(coord.z) + " with index count: " + std::to_string(chunk->getIndices().size()));
                     updateChunkBuffers(coord, chunk->getVertices(), chunk->getIndices());
                 }
 
@@ -1309,6 +1310,7 @@ private:
 
         // Create index buffer
         VkDeviceSize indexBufferSize = sizeof(indices[0]) * indices.size();
+        LOG("createChunkBuffers: Index vector size: " + std::to_string(indices.size()) + ", calculated buffer size: " + std::to_string(indexBufferSize));
         VkBuffer indexStagingBuffer;
         VmaAllocation indexStagingBufferAllocation;
         createBuffer(indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, indexStagingBuffer, indexStagingBufferAllocation);
@@ -1323,9 +1325,18 @@ private:
         copyBuffer(indexStagingBuffer, indexBuffer, indexBufferSize);
         vmaDestroyBuffer(allocator, indexStagingBuffer, indexStagingBufferAllocation);
         chunkIndexBuffers[coord] = {indexBuffer, indexBufferAllocation};
+        LOG("createChunkBuffers: Index buffer created for chunk " + std::to_string(coord.x) + "," + std::to_string(coord.y) + "," + std::to_string(coord.z) + ". Handle: " + std::to_string((uint64_t)indexBuffer) + ", Allocation: " + std::to_string((uint64_t)indexBufferAllocation));
+        
+        // Mark chunk as not dirty after buffers are updated
+        // We need to get the chunk object from the chunk manager to set its dirty flag
+        Chunk* chunkPtr = editor.chunkManager.getChunk(coord);
+        if (chunkPtr) {
+            chunkPtr->meshDirty = false;
+        }
     }
 
     void updateChunkBuffers(const Chunk::ChunkCoord& coord, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
+        vkDeviceWaitIdle(device);
         // Destroy existing buffers
         destroyChunkBuffers(coord);
         // Recreate buffers with new data
@@ -1448,46 +1459,7 @@ private:
                 }
             }
 
-            // Update chunk manager
-            editor.chunkManager.updateLoadedChunks(camera.position3D);
-            editor.chunkManager.rebuildDirtyChunks();
-
-            // --- Physics Body Management ---
             
-            std::vector<OctreeData<Chunk::PhysicsVoxelData>> voxelsInRadius = 
-                editor.chunkManager.physicsOctree.queryRadius(toCustomVector3(camera.position3D), physicsActivationRadius);
-
-            std::set<glm::vec3> shouldBeActivePositions;
-            for (const auto& octreeData : voxelsInRadius) {
-                shouldBeActivePositions.insert(PhysicsSystem::toGLMVec3(octreeData.position));
-
-                if (activePhysicsBodies.find(PhysicsSystem::toGLMVec3(octreeData.position)) == activePhysicsBodies.end()) {
-                    // Create new Jolt body
-                    JPH::BodyID newBodyID = physicsSystem.createBoxBody(
-                        PhysicsSystem::toGLMVec3(octreeData.position),
-                        glm::vec3(octreeData.data.size / 2.0f), // Half extent
-                        JPH::EMotionType::Static, // Voxels are static
-                        ObjectLayer::NON_MOVING
-                    );
-                    if (!newBodyID.IsInvalid()) {
-                        activePhysicsBodies[PhysicsSystem::toGLMVec3(octreeData.position)] = newBodyID;
-                    }
-                }
-            }
-
-            // Clean up inactive bodies
-            std::vector<glm::vec3> toRemove;
-            for (const auto& pair : activePhysicsBodies) {
-                if (shouldBeActivePositions.find(pair.first) == shouldBeActivePositions.end()) {
-                    toRemove.push_back(pair.first);
-                }
-            }
-
-            for (const auto& pos : toRemove) {
-                physicsSystem.destroyBody(activePhysicsBodies[pos]);
-                activePhysicsBodies.erase(pos);
-            }
-            // --- End Physics Body Management ---
 
             // Update mouse button state
             wasLeftMouseButtonPressed = isLeftMouseButtonPressed;
@@ -1719,6 +1691,47 @@ private:
 
             // Render ImGui
             ImGui::Render();
+
+            // Update chunk manager
+            editor.chunkManager.updateLoadedChunks(camera.position3D);
+            editor.chunkManager.rebuildDirtyChunks();
+
+            // --- Physics Body Management ---
+            
+            std::vector<OctreeData<Chunk::PhysicsVoxelData>> voxelsInRadius = 
+                editor.chunkManager.physicsOctree.queryRadius(toCustomVector3(camera.position3D), physicsActivationRadius);
+
+            std::set<glm::vec3> shouldBeActivePositions;
+            for (const auto& octreeData : voxelsInRadius) {
+                shouldBeActivePositions.insert(PhysicsSystem::toGLMVec3(octreeData.position));
+
+                if (activePhysicsBodies.find(PhysicsSystem::toGLMVec3(octreeData.position)) == activePhysicsBodies.end()) {
+                    // Create new Jolt body
+                    JPH::BodyID newBodyID = physicsSystem.createBoxBody(
+                        PhysicsSystem::toGLMVec3(octreeData.position),
+                        glm::vec3(octreeData.data.size / 2.0f), // Half extent
+                        JPH::EMotionType::Static, // Voxels are static
+                        ObjectLayer::NON_MOVING
+                    );
+                    if (!newBodyID.IsInvalid()) {
+                        activePhysicsBodies[PhysicsSystem::toGLMVec3(octreeData.position)] = newBodyID;
+                    }
+                }
+            }
+
+            // Clean up inactive bodies
+            std::vector<glm::vec3> toRemove;
+            for (const auto& pair : activePhysicsBodies) {
+                if (shouldBeActivePositions.find(pair.first) == shouldBeActivePositions.end()) {
+                    toRemove.push_back(pair.first);
+                }
+            }
+
+            for (const auto& pos : toRemove) {
+                physicsSystem.destroyBody(activePhysicsBodies[pos]);
+                activePhysicsBodies.erase(pos);
+            }
+            // --- End Physics Body Management ---
 
             drawFrame();
         }
