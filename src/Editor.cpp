@@ -9,11 +9,17 @@
 #include <vector>
 #include <memory>
 
+struct PointLight {
+    alignas(16) glm::vec3 position;
+    alignas(16) glm::vec3 color;
+};
+
 class Editor {
 public:
     // management
     ChunkManager chunkManager;
     std::unique_ptr<PlayerCharacter> playerCharacter;
+    std::vector<PointLight> lights;
 
     // state
     bool isPlayingPreview = false;

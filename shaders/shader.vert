@@ -8,6 +8,8 @@ layout(location = 4) in float inObjectType;
 layout(location = 5) in vec3 inNormal;
 
 layout(location = 0) out vec4 fragColor;
+layout(location = 1) out vec3 fragWorldPos;
+layout(location = 2) out vec3 fragNormal;
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     // mat4 model;
@@ -24,5 +26,7 @@ void main() {
     gl_Position = ubo.proj * ubo.view * push.model * vec4(inPosition, 1.0);
     // gl_Position = ubo.proj * ubo.view * vec4(inPosition, 1.0);
     fragColor = inColor;
+    fragWorldPos = vec3(push.model * vec4(inPosition, 1.0));
+    fragNormal = mat3(transpose(inverse(push.model))) * inNormal;
     // fragColor = vec4(abs(push.model[3].xyz) * 0.02, 1.0);
 }
