@@ -5,14 +5,10 @@
 #include "ChunkManager.h"
 #include "PlayerCharacter.h"
 #include "Sphere.h"
+#include "Light.h"
 
 #include <vector>
 #include <memory>
-
-struct PointLight {
-    alignas(16) glm::vec3 position;
-    alignas(16) glm::vec3 color;
-};
 
 class Editor {
 public:

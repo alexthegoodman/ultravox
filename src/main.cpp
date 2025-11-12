@@ -47,10 +47,12 @@
 #include "helpers.h"
 #include "PlayerCharacter.h"
 #include "Sphere.h"
+#include "Light.h"
 
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
 const int MAX_FRAMES_IN_FLIGHT = 2;
+const int MAX_LIGHTS = 4;
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -128,10 +130,13 @@ struct SwapChainSupportDetails {
 //     glm::mat4 proj;
 // };
 
-struct alignas(16) UniformBufferObject {
+struct UniformBufferObject {
     // glm::mat4 model;
     glm::mat4 view;
     glm::mat4 proj;
+    alignas(16) glm::vec3 cameraPos;
+    int numLights;
+    PointLight lights[MAX_LIGHTS];
 };
 
 struct MeshPushConstants {
@@ -1198,6 +1203,12 @@ private:
         ubo.view = camera.getView();
         ubo.proj = camera.getProjection(swapChainExtent.width / (float) swapChainExtent.height);
         ubo.proj[1][1] *= -1;
+        ubo.cameraPos = camera.position3D;
+
+        ubo.numLights = static_cast<int>(editor.lights.size());
+        for (int i = 0; i < editor.lights.size() && i < MAX_LIGHTS; ++i) {
+            ubo.lights[i] = editor.lights[i];
+        }
 
         void* data;
         vmaMapMemory(allocator, uniformBuffersAllocations[currentImage], &data);
@@ -1210,7 +1221,7 @@ private:
         uboLayoutBinding.binding = 0;
         uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         uboLayoutBinding.descriptorCount = 1;
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -1787,6 +1798,15 @@ private:
 
             if (ImGui::Button("Add Landscape")) {
                 editor.chunkManager.generateFlatLandscape();
+            }
+
+            if (ImGui::Button("Add Point Light")) {
+                if (editor.lights.size() < MAX_LIGHTS) {
+                    PointLight newLight;
+                    newLight.position = camera.position3D;
+                    newLight.color = glm::vec3(1.0f, 1.0f, 1.0f);
+                    editor.lights.push_back(newLight);
+                }
             }
 
             // if (ImGui::Button("Inspect Landscape Data")) {
