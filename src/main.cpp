@@ -1802,16 +1802,23 @@ private:
             static int seed = 1337;
             static float frequency = 0.02f;
             static int octaves = 4;
+            static int numChunksX = 4;
+            static int numChunksY = 1;
+            static int numChunksZ = 4;
 
             ImGui::InputInt("Seed", &seed);
             ImGui::SliderFloat("Frequency", &frequency, 0.001f, 0.1f);
             ImGui::SliderInt("Octaves", &octaves, 1, 10);
+            ImGui::InputInt("Chunks X", &numChunksX);
+            ImGui::InputInt("Chunks Y", &numChunksY);
+            ImGui::InputInt("Chunks Z", &numChunksZ);
 
             if (ImGui::Button("Generate World")) {
                 editor.chunkManager.terrainGenerator.setSeed(seed);
                 editor.chunkManager.terrainGenerator.setFrequency(frequency);
                 editor.chunkManager.terrainGenerator.setOctaves(octaves);
-                editor.chunkManager.regenerateWorld();
+                editor.chunkManager.generateWorld(numChunksX, numChunksY, numChunksZ);
+                editor.chunkManager.updateLoadedChunks(camera.position3D);
             }
 
             ImGui::End();

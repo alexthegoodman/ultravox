@@ -49,7 +49,7 @@ public:
         LOG("ChunkManager initialized with path: " + worldDataPath);
     }
     
-    void regenerateWorld() {
+    void clearWorld() {
         // Unload all chunks without saving
         std::vector<Chunk::ChunkCoord> toUnload;
         for (const auto& pair : loadedChunks) {
@@ -69,6 +69,23 @@ public:
                 std::filesystem::remove(entry.path());
             }
         }
+    }
+
+    void generateWorld(int numChunksX, int numChunksY, int numChunksZ) {
+        clearWorld();
+        LOG("Starting generation of new world...");
+
+        for (int x = 0; x < numChunksX; ++x) {
+            for (int y = 0; y < numChunksY; ++y) {
+                for (int z = 0; z < numChunksZ; ++z) {
+                    Chunk::ChunkCoord coord{x, y, z};
+                    auto chunk = std::make_unique<Chunk>(coord);
+                    terrainGenerator.generateChunk(chunk.get());
+                    saveChunk(coord, chunk.get());
+                }
+            }
+        }
+        LOG("New world generation complete.");
     }
     
     // Update which chunks should be loaded based on camera position
@@ -381,20 +398,18 @@ private:
         auto chunk = std::make_unique<Chunk>(coord);
         std::string filePath = getChunkFilePath(coord);
         
-        bool loadedFromDisk = false;
         if (std::filesystem::exists(filePath)) {
             std::ifstream file(filePath, std::ios::binary);
             if (file.is_open() && chunk->loadFromBinary(file)) {
                 LOG("Loaded chunk from disk: " + filePath);
-                loadedFromDisk = true;
+            } else {
+                LOG("Failed to load chunk from file: " + filePath);
+                return nullptr;
             }
             file.close();
-        } 
-        
-        if (!loadedFromDisk) {
-            terrainGenerator.generateChunk(chunk.get());
-            saveChunk(coord, chunk.get());
-            LOG("Generated and saved new chunk: " + filePath);
+        } else {
+            missingChunks.insert(coord);
+            return nullptr;
         }
 
         // Populate physicsOctree with solid voxels
