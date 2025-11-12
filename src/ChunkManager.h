@@ -22,6 +22,8 @@
 #include "Octree.h" // Include Octree implementation
 #include "PhysicsSystem.h" // For PhysicsSystem::RayCastResult
 
+#include "TerrainGenerator.h"
+
 // Custom hash for ChunkCoord
 namespace std {
     template<>
@@ -34,6 +36,7 @@ namespace std {
 
 class ChunkManager {
 public:
+    TerrainGenerator terrainGenerator;
     Octree<Chunk::PhysicsVoxelData> physicsOctree; 
 
     ChunkManager(const std::string& worldPath = "world_data") 
@@ -44,6 +47,28 @@ public:
         // Create world data directory if it doesn't exist
         std::filesystem::create_directories(worldDataPath);
         LOG("ChunkManager initialized with path: " + worldDataPath);
+    }
+    
+    void regenerateWorld() {
+        // Unload all chunks without saving
+        std::vector<Chunk::ChunkCoord> toUnload;
+        for (const auto& pair : loadedChunks) {
+            toUnload.push_back(pair.first);
+        }
+        for (const auto& coord : toUnload) {
+            unloadChunk(coord);
+        }
+        loadedChunks.clear();
+        modifiedChunks.clear();
+        missingChunks.clear();
+        physicsOctree.clear();
+
+        // Delete all chunk files
+        for (const auto& entry : std::filesystem::directory_iterator(worldDataPath)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".dat") {
+                std::filesystem::remove(entry.path());
+            }
+        }
     }
     
     // Update which chunks should be loaded based on camera position
@@ -212,81 +237,8 @@ public:
     //     }
     // }
 
-    void generateTerrain(Chunk* chunk) {
-        const Chunk::ChunkCoord& coord = chunk->getCoordinate();
-        glm::vec3 chunkWorldPos = chunk->getWorldPosition();
-        
-        // Only generate terrain for chunks that touch y=0
-        if (coord.y != 0) return;
-        
-        // Simple flat terrain at y=0
-        for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
-            for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
-                
-                // Calculate a color index based on the x and z coordinates
-                // We use the full extent of the chunk for the color range (0 to 2*CHUNK_SIZE - 2)
-                float totalIndex = static_cast<float>(x + z);
-                float maxIndex = static_cast<float>(Chunk::CHUNK_SIZE * 2 - 2);
-                
-                // Map the index to a Hue value (0.0 to 1.0) for the rainbow
-                float hue = totalIndex / maxIndex; // 0.0 (Red) -> 1.0 (Red/Violet)
-                
-                // Set Saturation and Lightness for vibrant colors
-                float saturation = 1.0f; // Full saturation
-                float lightness = 0.5f;  // Mid-range lightness for pure hues
-                
-                // Convert HSL to an RGB color vector
-                glm::vec4 color = HSLtoRGB(hue, saturation, lightness, 1.0f);
-                
-                // Place a single voxel at y=0 with the rainbow color
-                chunk->setVoxel(x, 0, z, Chunk::VoxelData(color, 1));
-
-                // Insert physics voxel data into the octree
-                glm::vec3 voxelWorldPos = chunkWorldPos + glm::vec3(x, 0, z) * Chunk::VOXEL_SIZE;
-                Chunk::PhysicsVoxelData physicsData(voxelWorldPos, Chunk::VOXEL_SIZE, 1);
-                physicsOctree.insert(Vector3(voxelWorldPos.x, voxelWorldPos.y, voxelWorldPos.z), physicsData);
-            }
-        }
-    }
-
     // Public function for the ImGUI button
-    void generateFlatLandscape() {
-        // 1. Define the dimensions for 100x100 area at y=0
-        // CHUNK_SIZE = 32. 100/32 = 3.125. We need 4 chunks (0, 1, 2, 3).
-        const int NUM_CHUNKS_X = 4;
-        const int NUM_CHUNKS_Z = 4;
-        const int CHUNK_Y = 0; // The layer where the terrain will sit
-        
-        LOG("Starting generation and saving of 4x4 flat chunk landscape.");
-        
-        // 2. Iterate through the required chunk coordinates
-        for (int cx = 0; cx < NUM_CHUNKS_X; ++cx) {
-            for (int cz = 0; cz < NUM_CHUNKS_Z; ++cz) {
-                
-                Chunk::ChunkCoord coord{cx, CHUNK_Y, cz};
-                
-                // A. Create a new, temporary Chunk object (starts as all air)
-                auto newChunk = std::make_unique<Chunk>(coord);
-                
-                // B. Generate the flat terrain using the existing logic
-                // NOTE: Your existing generateTerrain function only populates y=0.
-                generateTerrain(newChunk.get()); 
-                
-                // C. Force a mesh rebuild to ensure the 'isEmpty' flag is updated
-                // (Crucial for efficient loading/saving if empty chunks are skipped)
-                newChunk->rebuildMesh(); 
-                
-                // D. Save the chunk directly to disk
-                // We use newChunk.get() because saveChunk expects a raw pointer.
-                saveChunk(coord, newChunk.get());
-            }
-        }
-
-        // TODO: load in from file now or no?
-
-        LOG("Flat landscape generation complete and saved to disk.");
-    }
-
+    
     // Helper function to read a binary chunk file and write the contents to a text file
     void exportChunkDataToTextFile(const std::string& binaryFilePath, const std::string& textExportPath) {
         std::ifstream binaryFile(binaryFilePath, std::ios::binary);
@@ -439,34 +391,29 @@ private:
             file.close();
         } 
         
-        if (loadedFromDisk) {
-            // If loaded from disk, populate physicsOctree with existing solid voxels
-            glm::vec3 chunkWorldPos = chunk->getWorldPosition();
-            for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
-                for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
-                    for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
-                        if (chunk->isSolid(x, y, z)) {
-                            glm::vec3 voxelWorldPos = chunkWorldPos + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
-                            Chunk::PhysicsVoxelData physicsData(voxelWorldPos, Chunk::VOXEL_SIZE, chunk->getVoxel(x, y, z).type);
-                            physicsOctree.insert(Vector3(voxelWorldPos.x, voxelWorldPos.y, voxelWorldPos.z), physicsData);
-                        }
+        if (!loadedFromDisk) {
+            terrainGenerator.generateChunk(chunk.get());
+            saveChunk(coord, chunk.get());
+            LOG("Generated and saved new chunk: " + filePath);
+        }
+
+        // Populate physicsOctree with solid voxels
+        glm::vec3 chunkWorldPos = chunk->getWorldPosition();
+        for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
+            for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
+                for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
+                    if (chunk->isSolid(x, y, z)) {
+                        glm::vec3 voxelWorldPos = chunkWorldPos + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
+                        Chunk::PhysicsVoxelData physicsData(voxelWorldPos, Chunk::VOXEL_SIZE, chunk->getVoxel(x, y, z).type);
+                        physicsOctree.insert(Vector3(voxelWorldPos.x, voxelWorldPos.y, voxelWorldPos.z), physicsData);
                     }
                 }
             }
-        } else {
-            missingChunks.insert(coord); // Cache the miss
-            return nullptr;
         }
-
-        // we dont want this, we are not doing infinite worlds, just loading from disk
-        // else {
-        //     // Generate new terrain for this chunk (which also populates the octree)
-        //     generateTerrain(chunk.get());
-        //     LOG("Generated new chunk: " + filePath);
-        // }
         
         Chunk* ptr = chunk.get();
         loadedChunks[coord] = std::move(chunk);
+        missingChunks.erase(coord);
         return ptr;
     }
 

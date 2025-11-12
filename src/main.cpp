@@ -1797,9 +1797,24 @@ private:
                         1000.0f / ImGui::GetIO().Framerate, 
                         ImGui::GetIO().Framerate);
 
-            if (ImGui::Button("Add Landscape")) {
-                editor.chunkManager.generateFlatLandscape();
+            ImGui::Begin("Terrain Generation");
+
+            static int seed = 1337;
+            static float frequency = 0.02f;
+            static int octaves = 4;
+
+            ImGui::InputInt("Seed", &seed);
+            ImGui::SliderFloat("Frequency", &frequency, 0.001f, 0.1f);
+            ImGui::SliderInt("Octaves", &octaves, 1, 10);
+
+            if (ImGui::Button("Generate World")) {
+                editor.chunkManager.terrainGenerator.setSeed(seed);
+                editor.chunkManager.terrainGenerator.setFrequency(frequency);
+                editor.chunkManager.terrainGenerator.setOctaves(octaves);
+                editor.chunkManager.regenerateWorld();
             }
+
+            ImGui::End();
 
             if (ImGui::Button("Add Tree")) {
                 Tree tree(glm::vec3(10.0f, 1.0f, 10.0f), 100);
