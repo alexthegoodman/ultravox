@@ -1611,9 +1611,9 @@ private:
 
                     // editor.playerCharacter->character->AddLinearVelocity(JPH::Vec3(deltaVel.x, deltaVel.y, deltaVel.z));
 
-                    glm::vec3 playerPos = editor.playerCharacter->getPosition();
-                    // editor.playerCharacter->update(playerPos);
-                    editor.playerCharacter->sphere.transform.position = playerPos;
+                    // glm::vec3 playerPos = editor.playerCharacter->getPosition();
+                    // // editor.playerCharacter->update(playerPos);
+                    // editor.playerCharacter->sphere.transform.position = playerPos;
                 }
             }
 
@@ -1626,7 +1626,7 @@ private:
                     camera.setPosition(newPos.x, newPos.y, newPos.z);
                     camera.lookAt(playerPos);
 
-                    // editor.playerCharacter->sphere.transform.position = playerPos;
+                    editor.playerCharacter->sphere.transform.position = playerPos;
                 }
             }
 
