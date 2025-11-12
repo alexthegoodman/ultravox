@@ -237,6 +237,7 @@ private:
     bool wasLeftMouseButtonPressed = false;
     float paintYLevel = 0.0f;
     std::set<glm::vec3> paintedVoxelsInStroke;
+    float voxelColor[4] = { 1.0f, 0.0f, 0.0f, 1.0f }; // RGBA color
 
     void initWindow() {
         LOG("Initializing window");
@@ -1673,7 +1674,7 @@ private:
                         LOG("Add Voxel!");
 
                         // Add the voxel
-                        editor.chunkManager.setVoxelWorld(newVoxelPos, Chunk::VoxelData(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f), 1)); // Red voxel
+                        editor.chunkManager.setVoxelWorld(newVoxelPos, Chunk::VoxelData(glm::vec4(voxelColor[0], voxelColor[1], voxelColor[2], voxelColor[3]), 1)); // Red voxel
                         paintedVoxelsInStroke.insert(newVoxelPos);
                     }
                 }
@@ -1788,14 +1789,16 @@ private:
                 editor.chunkManager.generateFlatLandscape();
             }
 
-            if (ImGui::Button("Inspect Landscape Data")) {
-                editor.chunkManager.exportChunkDataToTextFile("world_data/chunk_0_0_0.dat", "chunk_0_0_0.txt");
-            }
+            // if (ImGui::Button("Inspect Landscape Data")) {
+            //     editor.chunkManager.exportChunkDataToTextFile("world_data/chunk_0_0_0.dat", "chunk_0_0_0.txt");
+            // }
 
             if (ImGui::Button("Paint Voxels")) {
                 editor.isPainting = !editor.isPainting;
             }
             ImGui::Text(editor.isPainting ? "Painting enabled" : "Painting disabled");
+
+            ImGui::ColorPicker4("Voxel Color", voxelColor, ImGuiColorEditFlags_NoInputs);
 
             ImGui::Text("Active Physics Bodies %i", 
                         activePhysicsBodies.size());
