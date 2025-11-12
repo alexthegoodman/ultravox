@@ -35,6 +35,7 @@ add_executable(${PROJECT_NAME}
     src/PhysicsSystem.cpp
     src/PlayerCharacter.cpp
     src/Sphere.cpp
+    src/Tree.cpp
     # src/ChunkManager.cpp
     # other files currently included in main.cpp
     # Add ImGuizmo source files directly to your target

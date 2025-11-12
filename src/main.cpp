@@ -48,6 +48,7 @@
 #include "PlayerCharacter.h"
 #include "Sphere.h"
 #include "Light.h"
+#include "Tree.h"
 
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
@@ -1798,6 +1799,14 @@ private:
 
             if (ImGui::Button("Add Landscape")) {
                 editor.chunkManager.generateFlatLandscape();
+            }
+
+            if (ImGui::Button("Add Tree")) {
+                Tree tree(glm::vec3(10.0f, 1.0f, 10.0f), 100);
+                auto voxels = tree.generate();
+                for (const auto& voxelInfo : voxels) {
+                    editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
+                }
             }
 
             if (ImGui::Button("Add Point Light")) {
