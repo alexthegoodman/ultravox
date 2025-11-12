@@ -2,7 +2,7 @@
 #include "Logger.h"
 
 PlayerCharacter::PlayerCharacter(PhysicsSystem& physicsSystem, const glm::vec3& position)
-    : physicsSystem(physicsSystem), sphere(position, 0.5f) {
+    : physicsSystem(physicsSystem), sphere(position, 2.0f) {
     LOG("Creating PlayerCharacter");
     character = physicsSystem.createCharacter(position);
 }

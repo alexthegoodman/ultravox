@@ -2,6 +2,7 @@
 #include "Logger.h"
 
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Character/Character.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/CastResult.h>
@@ -181,9 +182,12 @@ JPH::Character* PhysicsSystem::createCharacter(const glm::vec3& position) {
     }
 
     // 1. Define shape settings (e.g., a capsule)
-    float character_height = 0.5f;
-    float character_radius = 0.5f;
-    JPH::Ref<JPH::ShapeSettings> shape_settings = new JPH::CapsuleShapeSettings(character_height / 2.0f, character_radius);
+    // float character_height = 2.0f;
+    // float character_radius = 1.0f;
+    // JPH::Ref<JPH::ShapeSettings> shape_settings = new JPH::CapsuleShapeSettings(character_height / 2.0f, character_radius);
+
+    float character_radius = 1.0f;
+    JPH::Ref<JPH::ShapeSettings> shape_settings = new JPH::SphereShapeSettings(character_radius);
 
     // 2. Create the shape (this "cooks" the shape into an optimized format)
     JPH::ShapeSettings::ShapeResult shape_result = shape_settings->Create();
