@@ -228,7 +228,8 @@ private:
 
     // Map to store active Jolt physics bodies, keyed by voxel world position
     std::map<glm::vec3, JPH::BodyID> activePhysicsBodies;
-    float physicsActivationRadius = 24.0f; // Define the radius around the camera for active physics bodies
+    // float physicsActivationRadius = 24.0f; // Define the radius around the camera for active physics bodies
+    float physicsActivationRadius = 12.0f;
 
     // Camera control variables for ImGui
     float currentPitch = 0.0f;
