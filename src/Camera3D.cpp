@@ -46,7 +46,7 @@ public:
 
     // Perspective projection
     glm::mat4 getProjection(float aspectRatio = 1.0f) const {
-        return glm::perspective(fov * zoom, aspectRatio, nearPlane, farPlane);
+        return glm::perspective(fov, aspectRatio, nearPlane, farPlane);
     }
 
     // View matrix
@@ -92,33 +92,10 @@ public:
         updateTarget();
     }
 
-    // // Get current pitch in degrees
-    // float getPitch() const {
-    //     glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
-    //     return euler.x; // Pitch is typically around the X-axis
-    // }
-
-    // // Get current yaw in degrees
-    // float getYaw() const {
-    //     glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
-    //     return euler.y; // Yaw is typically around the Y-axis
-    // }
-
-    // // Set pitch directly
-    // void setPitch(float angleDegrees) {
-    //     glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
-    //     euler.x = angleDegrees;
-    //     rotation = glm::normalize(glm::quat(glm::radians(euler)));
-    //     updateTarget();
-    // }
-
-    // // Set yaw directly
-    // void setYaw(float angleDegrees) {
-    //     glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
-    //     euler.y = angleDegrees;
-    //     rotation = glm::normalize(glm::quat(glm::radians(euler)));
-    //     updateTarget();
-    // }
+    void updateZoomFromSlider(float zoomValue) {
+        glm::vec3 direction = glm::normalize(position3D - target);
+        position3D = target + direction * zoomValue;
+    }
 
     // Get current pitch in degrees
     float getPitch() const {

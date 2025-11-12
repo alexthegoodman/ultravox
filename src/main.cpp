@@ -1724,7 +1724,11 @@ private:
 
             ImGui::SliderFloat("Pitch", &currentPitch, -89.0f, 89.0f);
             ImGui::SliderFloat("Yaw", &currentYaw, -180.0f, 180.0f);
-            ImGui::SliderFloat("Zoom", &camera.zoom, 0.1f, 25.0f);
+            // ImGui::SliderFloat("Zoom", &camera.zoom, 0.1f, 25.0f);
+            if (ImGui::SliderFloat("Zoom", &camera.zoom, 1.0f, 200.0f)) {
+                camera.updateZoomFromSlider(camera.zoom);
+            }
+
 
             if (currentPitch != camera.getPitch()) {
                 camera.setPitch(currentPitch);
@@ -1898,8 +1902,6 @@ private:
     void cleanup() {
         LOG("Starting cleanup");
 
-        // editor.chunkManager.saveAllChunks(); ? or perhaps autosave is more appropriate, besides, dont want to overwrite all files maybe? or better to?
-
         // Destroy all chunk buffers
         for (auto const& [coord, bufferPair] : chunkVertexBuffers) {
             vmaDestroyBuffer(allocator, bufferPair.first, bufferPair.second);
@@ -1909,6 +1911,8 @@ private:
         }
 
         destroyPlayerBuffers();
+
+        LOG("Cleanup swapchain");
 
         cleanupSwapChain();
 
@@ -1937,6 +1941,8 @@ private:
         vmaDestroyAllocator(allocator);
 
         vkDestroyRenderPass(device, renderPass, nullptr);
+
+        LOG("Shutdown physics");
 
         physicsSystem.shutdown();
 
