@@ -1622,7 +1622,7 @@ private:
                 if (editor.isPlayingPreview) {
                     glm::vec3 playerPos = editor.playerCharacter->getPosition();
                     // glm::vec3 playerPos = editor.playerCharacter->sphere.getPosition();
-                    glm::vec3 newPos = playerPos + glm::vec3(0.0f, 10.0f, 16.0f);
+                    glm::vec3 newPos = playerPos + glm::vec3(0.0f, 16.0f, 24.0f);
                     camera.setPosition(newPos.x, newPos.y, newPos.z);
                     camera.lookAt(playerPos);
 
@@ -1912,9 +1912,14 @@ private:
             editor.chunkManager.rebuildDirtyChunks();
 
             // --- Physics Body Management ---
-            
-            std::vector<OctreeData<Chunk::PhysicsVoxelData>> voxelsInRadius = 
-                editor.chunkManager.physicsOctree.queryRadius(toCustomVector3(camera.position3D), physicsActivationRadius);
+
+            std::vector<OctreeData<Chunk::PhysicsVoxelData>> voxelsInRadius;
+
+            if (editor.playerCharacter) {
+                voxelsInRadius = editor.chunkManager.physicsOctree.queryRadius(toCustomVector3(editor.playerCharacter->getPosition()), physicsActivationRadius);
+            } else {
+                voxelsInRadius = editor.chunkManager.physicsOctree.queryRadius(toCustomVector3(camera.position3D), physicsActivationRadius);
+            }
 
             std::set<glm::vec3> shouldBeActivePositions;
             for (const auto& octreeData : voxelsInRadius) {
@@ -2001,12 +2006,12 @@ private:
 
         LOG("Shutdown physics");
 
-        physicsSystem.shutdown();
+        // destroy here, not in class, to be centralized for now
+        if (editor.playerCharacter) {
+            physicsSystem.destroyCharacter(editor.playerCharacter->character);
+        }
 
-        // causes exception, although its problematic not to destroy it?
-        // if (editor.playerCharacter) {
-        //     physicsSystem.destroyCharacter(editor.playerCharacter->character);
-        // }
+        physicsSystem.shutdown();
 
         vkDestroyDevice(device, nullptr);
 

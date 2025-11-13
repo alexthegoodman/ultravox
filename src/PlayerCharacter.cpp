@@ -8,8 +8,8 @@ PlayerCharacter::PlayerCharacter(PhysicsSystem& physicsSystem, const glm::vec3& 
 }
 
 PlayerCharacter::~PlayerCharacter() {
-    LOG("Destroying PlayerCharacter");
-    physicsSystem.destroyCharacter(character);
+    // LOG("Destroying PlayerCharacter");
+    // physicsSystem.destroyCharacter(character);
 }
 
 void PlayerCharacter::update(glm::vec3 playerPos) {
