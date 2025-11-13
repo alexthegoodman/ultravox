@@ -3,7 +3,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-#include "types.h"
+#include "../types.h"
 
 class Tree {
 public:

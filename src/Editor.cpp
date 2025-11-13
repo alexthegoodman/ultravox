@@ -20,8 +20,8 @@ public:
     // state
     bool isPlayingPreview = false;
     bool isPainting = false;
-    bool isPaintingTrees = false;
-    bool isPaintingHouse = false;
+    bool isPaintingComponent = false;
+    ComponentType isPaintingComponentType = ComponentType::Tree;
     bool isPaintingItem = false;
     ItemType isPaintingItemType = ItemType::Apple; // defaults to Apple
 

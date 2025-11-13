@@ -1,5 +1,5 @@
 #include "House.h"
-#include "Chunk.h"
+#include "../Chunk.h"
 #include <cstdlib>
 #include <ctime>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Sphere.h"
+#include "../Sphere.h"
 #include "Item.h"
 #include <memory>
 

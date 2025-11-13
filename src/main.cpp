@@ -49,11 +49,12 @@
 #include "PlayerCharacter.h"
 #include "Sphere.h"
 #include "Light.h"
-#include "Tree.h"
-#include "House.h"
-#include "WorldItem.h"
-#include "Apple.h"
-#include "Laser.h"
+#include "components/Tree.h"
+#include "components/House.h"
+#include "components/WarTornDome.h"
+#include "items/WorldItem.h"
+#include "items/Apple.h"
+#include "items/Laser.h"
 
 // Custom operator< for glm::vec3 to allow its use in std::map
 namespace glm {
@@ -1676,7 +1677,7 @@ private:
             isLeftMouseButtonPressed = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
 
             // Painting logic
-            if ((editor.isPainting || editor.isPaintingTrees || editor.isPaintingHouse) && isLeftMouseButtonPressed) {
+            if ((editor.isPainting || editor.isPaintingComponent || editor.isPaintingItem) && isLeftMouseButtonPressed) {
                 double mouseX, mouseY;
                 glfwGetCursorPos(window, &mouseX, &mouseY);
 
@@ -1729,22 +1730,32 @@ private:
                             // Add the voxel
                             editor.chunkManager.setVoxelWorld(newVoxelPos, Chunk::VoxelData(glm::vec4(voxelColor[0], voxelColor[1], voxelColor[2], voxelColor[3]), 1)); // Red voxel
                             paintedVoxelsInStroke.insert(newVoxelPos);
-                        } else if (editor.isPaintingTrees) {
-                            Tree tree(newVoxelPos, 100);
-                            auto voxels = tree.generate();
-                            for (const auto& voxelInfo : voxels) {
-                                editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
-                            }
+                        } else if (editor.isPaintingComponent) {
+                            if (editor.isPaintingComponentType == ComponentType::Tree) {
+                                Tree tree(newVoxelPos, 100);
+                                auto voxels = tree.generate();
+                                for (const auto& voxelInfo : voxels) {
+                                    editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
+                                }
 
-                            editor.isPaintingTrees = false; // auto toggle off to avoid too many instances
-                        } else if (editor.isPaintingHouse) {
-                            House house(newVoxelPos, 6, 6, 4);
-                            auto voxels = house.generate();
-                            for (const auto& voxelInfo : voxels) {
-                                editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
-                            }
+                                editor.isPaintingComponent = false; // auto toggle off to avoid too many instances
+                            } else  if (editor.isPaintingComponentType == ComponentType::House) {
+                                House house(newVoxelPos, 6, 6, 4);
+                                auto voxels = house.generate();
+                                for (const auto& voxelInfo : voxels) {
+                                    editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
+                                }
 
-                            editor.isPaintingHouse = false;
+                                editor.isPaintingComponent = false;
+                            } else  if (editor.isPaintingComponentType == ComponentType::WarTornDome) {
+                                WarTornDome dome(newVoxelPos, 12.0, 0.25f, 50);
+                                auto voxels = dome.generate();
+                                for (const auto& voxelInfo : voxels) {
+                                    editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
+                                }
+
+                                editor.isPaintingComponent = false;
+                            }
                         } else if (editor.isPaintingItem) {
                             if (editor.isPaintingItemType == ItemType::Apple) {
                                 worldItems.emplace_back(std::make_unique<Apple>(), newVoxelPos);
@@ -1921,11 +1932,18 @@ private:
             ImGui::End();
 
             if (ImGui::Button("Add Tree")) {
-                editor.isPaintingTrees = !editor.isPaintingTrees;
+                editor.isPaintingComponent = !editor.isPaintingComponent;
+                editor.isPaintingComponentType = ComponentType::Tree;
             }
 
             if (ImGui::Button("Add House")) {
-                editor.isPaintingHouse = !editor.isPaintingHouse;
+                editor.isPaintingComponent = !editor.isPaintingComponent;
+                editor.isPaintingComponentType = ComponentType::House;
+            }
+
+            if (ImGui::Button("Add War Torn Dome")) {
+                editor.isPaintingComponent = !editor.isPaintingComponent;
+                editor.isPaintingComponentType = ComponentType::WarTornDome;
             }
 
             if (ImGui::Button("Add Point Light")) {

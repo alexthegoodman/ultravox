@@ -1,5 +1,5 @@
 #include "Tree.h"
-#include "Chunk.h" // For VOXEL_SIZE
+#include "../Chunk.h" // For VOXEL_SIZE
 #include <cstdlib> // For rand()
 #include <ctime>   // For time()
 

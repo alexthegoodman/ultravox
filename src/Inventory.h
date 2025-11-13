@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <memory>
-#include "Item.h"
+#include "items/Item.h"
 
 class Inventory {
 public:

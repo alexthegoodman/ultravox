@@ -35,15 +35,16 @@ add_executable(${PROJECT_NAME}
     src/PhysicsSystem.cpp
     src/PlayerCharacter.cpp
     src/Sphere.cpp
-    src/Tree.cpp
-    src/House.cpp
     src/TerrainGenerator.cpp
-    src/Item.cpp
-    src/Weapon.cpp
-    src/Apple.cpp
-    src/Laser.cpp
     src/Inventory.cpp
-    src/WorldItem.cpp
+    src/components/Tree.cpp
+    src/components/House.cpp
+    src/components/WarTornDome.cpp
+    src/items/Item.cpp
+    src/items/Weapon.cpp
+    src/items/Apple.cpp
+    src/items/Laser.cpp
+    src/items/WorldItem.cpp
     # src/Camera3D.cpp
     # src/ChunkManager.cpp
     # other files currently included in main.cpp

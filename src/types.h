@@ -26,3 +26,9 @@ enum class ItemType : uint32_t {
     Apple = 0,
     LaserGun = 1
 };
+
+enum class ComponentType : uint32_t {
+    Tree = 0,
+    House = 1,
+    WarTornDome = 2
+};
