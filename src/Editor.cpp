@@ -29,7 +29,7 @@ public:
         // LOG("Starting Editor");
         
         // editor settings allow for more to visible
-        chunkManager.setLoadRadius(5);
+        chunkManager.setLoadRadius(4);
         chunkManager.setUnloadRadius(8);
     }
 
@@ -37,13 +37,13 @@ public:
         isPlayingPreview = true;
         
         // restrict range to improve gameplay performance
-        chunkManager.setLoadRadius(2);
-        chunkManager.setUnloadRadius(4);
+        // chunkManager.setLoadRadius(2);
+        // chunkManager.setUnloadRadius(4);
     }
 
     void stopPlayingPreview() {
         isPlayingPreview = false;
-        chunkManager.setLoadRadius(5);
-        chunkManager.setUnloadRadius(8);
+        // chunkManager.setLoadRadius(5);
+        // chunkManager.setUnloadRadius(8);
     }
 };

@@ -9,7 +9,8 @@
 // Chunk represents a fixed-size grid of voxels
 class Chunk {
 public:
-    static constexpr int CHUNK_SIZE = 32; // 32x32x32 voxels per chunk
+    // static constexpr int CHUNK_SIZE = 32; // 32x32x32 voxels per chunk
+    static constexpr int CHUNK_SIZE = 128; // 128x128x128 voxels per chunk (for higher defintion worlds with a taller player)
     static constexpr float VOXEL_SIZE = 1.0f;
     bool meshDirty;
     

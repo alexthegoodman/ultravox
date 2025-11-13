@@ -1833,7 +1833,7 @@ private:
 
                                 editor.isPaintingComponent = false;
                             } else  if (editor.isPaintingComponentType == ComponentType::WarTornDome) {
-                                WarTornDome dome(newVoxelPos, 12.0, 0.25f, 50);
+                                WarTornDome dome(newVoxelPos, 48.0, 0.4f, 50);
                                 auto voxels = dome.generate();
                                 for (const auto& voxelInfo : voxels) {
                                     editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
@@ -2017,17 +2017,17 @@ private:
             ImGui::End();
 
             if (ImGui::Button("Add Tree")) {
-                editor.isPaintingComponent = !editor.isPaintingComponent;
+                editor.isPaintingComponent = true;
                 editor.isPaintingComponentType = ComponentType::Tree;
             }
 
             if (ImGui::Button("Add House")) {
-                editor.isPaintingComponent = !editor.isPaintingComponent;
+                editor.isPaintingComponent = true;
                 editor.isPaintingComponentType = ComponentType::House;
             }
 
             if (ImGui::Button("Add War Torn Dome")) {
-                editor.isPaintingComponent = !editor.isPaintingComponent;
+                editor.isPaintingComponent = true;
                 editor.isPaintingComponentType = ComponentType::WarTornDome;
             }
 
@@ -2052,13 +2052,13 @@ private:
             if (ImGui::Button("Add Apple")) {
                 // worldItems.emplace_back(std::make_unique<Apple>(), glm::vec3(20.0f, 15.0f, 20.0f));
                 editor.isPaintingItemType = ItemType::Apple;
-                editor.isPaintingItem = !editor.isPaintingItem;
+                editor.isPaintingItem = true;
             }
 
             if (ImGui::Button("Add Laser Gun")) {
                 // worldItems.emplace_back(std::make_unique<Laser>(), glm::vec3(22.0f, 15.0f, 20.0f));
                 editor.isPaintingItemType = ItemType::LaserGun;
-                editor.isPaintingItem = !editor.isPaintingItem;
+                editor.isPaintingItem = true;
             }
 
             ImGui::ColorPicker4("Voxel Color", voxelColor, ImGuiColorEditFlags_NoInputs);
@@ -2069,7 +2069,6 @@ private:
             if (ImGui::Button("Add Character")) {
                 if (!editor.playerCharacter) {
                     editor.playerCharacter = std::make_unique<PlayerCharacter>(physicsSystem, glm::vec3(25.0f, 16.0f, 25.0f));
-                    LOG("PC X: " + std::to_string(editor.playerCharacter->sphere.transform.position.x));
                 }
             }
 
