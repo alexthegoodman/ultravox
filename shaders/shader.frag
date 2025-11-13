@@ -25,20 +25,31 @@ void main() {
     vec3 normal = normalize(fragNormal);
     vec3 viewDir = normalize(ubo.cameraPos - fragWorldPos);
 
-    // Ambient lighting
+    // Ambient lighting (global fill)
     float ambientStrength = 0.1;
     vec3 ambient = ambientStrength * vec3(1.0, 1.0, 1.0);
 
-    // Diffuse and specular lighting
-    vec3 lighting = vec3(0.0, 0.0, 0.0);
+    // --- Hardcoded sunlight (directional light) ---
+    vec3 sunDir = normalize(vec3(-0.5, -1.0, -0.3)); // direction *from* which sunlight comes
+    vec3 sunColor = vec3(1.0, 0.95, 0.8);            // slightly warm tone
+
+    float diffSun = max(dot(normal, -sunDir), 0.0); // note the negation; light shines *toward* the surface
+    vec3 diffuseSun = diffSun * sunColor;
+
+    float specularStrength = 0.5;
+    vec3 halfwayDirSun = normalize(-sunDir + viewDir);
+    float specSun = pow(max(dot(normal, halfwayDirSun), 0.0), 32.0);
+    vec3 specularSun = specularStrength * specSun * sunColor;
+
+    // --- Point lights (same as before) ---
+    vec3 lighting = diffuseSun + specularSun;
     for (int i = 0; i < ubo.numLights; i++) {
         // Diffuse
         vec3 lightDir = normalize(ubo.lights[i].position - fragWorldPos);
         float diff = max(dot(normal, lightDir), 0.0);
         vec3 diffuse = diff * ubo.lights[i].color;
 
-        // Specular
-        float specularStrength = 0.5;
+        // Specular        
         vec3 halfwayDir = normalize(lightDir + viewDir);
         float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
         vec3 specular = specularStrength * spec * ubo.lights[i].color;
