@@ -38,6 +38,13 @@ add_executable(${PROJECT_NAME}
     src/Tree.cpp
     src/House.cpp
     src/TerrainGenerator.cpp
+    src/Item.cpp
+    src/Weapon.cpp
+    src/Apple.cpp
+    src/Laser.cpp
+    src/Inventory.cpp
+    src/WorldItem.cpp
+    # src/Camera3D.cpp
     # src/ChunkManager.cpp
     # other files currently included in main.cpp
     # Add ImGuizmo source files directly to your target

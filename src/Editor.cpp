@@ -22,6 +22,8 @@ public:
     bool isPainting = false;
     bool isPaintingTrees = false;
     bool isPaintingHouse = false;
+    bool isPaintingItem = false;
+    ItemType isPaintingItemType = ItemType::Apple; // defaults to Apple
 
     Editor() {
         // LOG("Starting Editor");

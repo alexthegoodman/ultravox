@@ -21,3 +21,8 @@ enum class ObjectType : uint32_t {
     Model = 8,
     Mockup = 9
 };
+
+enum class ItemType : uint32_t {
+    Apple = 0,
+    LaserGun = 1
+};

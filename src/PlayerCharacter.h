@@ -2,6 +2,7 @@
 
 #include "Sphere.h"
 #include "PhysicsSystem.h"
+#include "Inventory.h"
 #include <Jolt/Physics/Character/Character.h>
 
 class PlayerCharacter {
@@ -16,6 +17,7 @@ public:
 
     JPH::Character* character;
     Sphere sphere;
+    Inventory inventory;
 
 private:
     PhysicsSystem& physicsSystem;

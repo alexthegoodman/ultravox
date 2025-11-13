@@ -51,6 +51,9 @@
 #include "Light.h"
 #include "Tree.h"
 #include "House.h"
+#include "WorldItem.h"
+#include "Apple.h"
+#include "Laser.h"
 
 // Custom operator< for glm::vec3 to allow its use in std::map
 namespace glm {
@@ -237,10 +240,19 @@ private:
     VmaAllocation playerIndexBufferAllocation;
     uint32_t playerIndexCount;
 
+    // Item rendering data
+    std::vector<WorldItem> worldItems;
+    VkBuffer itemVertexBuffer;
+    VmaAllocation itemVertexBufferAllocation;
+    VkBuffer itemIndexBuffer;
+    VmaAllocation itemIndexBufferAllocation;
+    uint32_t itemIndexCount;
+
     // Map to store active Jolt physics bodies, keyed by voxel world position
     std::map<glm::vec3, JPH::BodyID> activePhysicsBodies;
     // float physicsActivationRadius = 24.0f; // Define the radius around the camera for active physics bodies
     float physicsActivationRadius = 12.0f;
+    float itemPickupRadius = 2.0f; // New constant for item pickup radius
 
     // Camera control variables for ImGui
     float currentPitch = 0.0f;
@@ -308,9 +320,38 @@ private:
         createDescriptorSets();
         createCommandBuffers();
         createPlayerBuffers();
+        createItemBuffers();
 
 
         LOG("Vulkan initialized!");
+    }
+
+    void createItemBuffers() {
+        std::vector<Vertex> vertices;
+        std::vector<uint32_t> indices;
+        createSphereMesh(vertices, indices, 20, 20, 0.5f);
+        itemIndexCount = static_cast<uint32_t>(indices.size());
+
+        // Create vertex buffer
+        VkDeviceSize vertexBufferSize = sizeof(vertices[0]) * vertices.size();
+        createBuffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, itemVertexBuffer, itemVertexBufferAllocation);
+        void* vertexData;
+        vmaMapMemory(allocator, itemVertexBufferAllocation, &vertexData);
+        memcpy(vertexData, vertices.data(), (size_t)vertexBufferSize);
+        vmaUnmapMemory(allocator, itemVertexBufferAllocation);
+
+        // Create index buffer
+        VkDeviceSize indexBufferSize = sizeof(indices[0]) * indices.size();
+        createBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, itemIndexBuffer, itemIndexBufferAllocation);
+        void* indexData;
+        vmaMapMemory(allocator, itemIndexBufferAllocation, &indexData);
+        memcpy(indexData, indices.data(), (size_t)indexBufferSize);
+        vmaUnmapMemory(allocator, itemIndexBufferAllocation);
+    }
+
+    void destroyItemBuffers() {
+        vmaDestroyBuffer(allocator, itemVertexBuffer, itemVertexBufferAllocation);
+        vmaDestroyBuffer(allocator, itemIndexBuffer, itemIndexBufferAllocation);
     }
 
     void createPlayerBuffers() {
@@ -1098,6 +1139,20 @@ private:
             vkCmdDrawIndexed(commandBuffer, playerIndexCount, 1, 0, 0, 0);
         }
 
+        // Render items
+        for (const auto& worldItem : worldItems) {
+            MeshPushConstants constants{};
+            constants.model = worldItem.sphere.transform.getModelMatrix();
+
+            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &constants);
+
+            VkBuffer vertexBuffers[] = {itemVertexBuffer};
+            VkDeviceSize offsets[] = {0};
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(commandBuffer, itemIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdDrawIndexed(commandBuffer, itemIndexCount, 1, 0, 0, 0);
+        }
+
         // Render ImGui
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
@@ -1690,13 +1745,43 @@ private:
                             }
 
                             editor.isPaintingHouse = false;
+                        } else if (editor.isPaintingItem) {
+                            if (editor.isPaintingItemType == ItemType::Apple) {
+                                worldItems.emplace_back(std::make_unique<Apple>(), newVoxelPos);
+
+                                editor.isPaintingItem = false;
+                            } else if (editor.isPaintingItemType == ItemType::LaserGun) {
+                                worldItems.emplace_back(std::make_unique<Laser>(), newVoxelPos);
+
+                                editor.isPaintingItem = false;
+                            }
                         }
+
                     }
                 }
             } else if (!isLeftMouseButtonPressed && wasLeftMouseButtonPressed) {
                 // Mouse button released, save modified chunks
                 editor.chunkManager.saveModifiedChunks();
                 paintedVoxelsInStroke.clear();
+            }
+
+            // Item pickup logic
+            if (editor.playerCharacter) {
+                glm::vec3 playerPos = editor.playerCharacter->getPosition();
+                if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+                    for (auto it = worldItems.begin(); it != worldItems.end(); ) {
+                        glm::vec3 itemPos = it->sphere.transform.position;
+                        float distance = glm::distance(playerPos, itemPos);
+
+                        if (distance < itemPickupRadius) {
+                            LOG("Picked up item: " + it->item->getName());
+                            editor.playerCharacter->inventory.addItem(std::move(it->item));
+                            it = worldItems.erase(it);
+                        } else {
+                            ++it;
+                        }
+                    }
+                }
             }
 
             // Start ImGui frame
@@ -1791,15 +1876,24 @@ private:
                 camera.setPosition(10.0f, 5.0f, 0.0f);
                 camera.lookAt(glm::vec3(0.0f, 0.0f, 0.0f));
             }
-
+            
             ImGui::End();
+
+            // Player Inventory ImGui Window
+            if (editor.playerCharacter) {
+                ImGui::Begin("Player Inventory");
+                ImGui::Text("Items:");
+                for (const auto& item : editor.playerCharacter->inventory.getItems()) {
+                    ImGui::Text("- %s", item->getName().c_str());
+                }
+                ImGui::End();
+            }
 
             // Example ImGui window
             ImGui::Begin("Vulkan Engine");
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 
                         1000.0f / ImGui::GetIO().Framerate, 
                         ImGui::GetIO().Framerate);
-
             ImGui::Begin("Terrain Generation");
 
             static int seed = 1337;
@@ -1851,6 +1945,18 @@ private:
                 editor.isPainting = !editor.isPainting;
             }
             ImGui::Text(editor.isPainting ? "Painting enabled" : "Painting disabled");
+
+            if (ImGui::Button("Add Apple")) {
+                // worldItems.emplace_back(std::make_unique<Apple>(), glm::vec3(20.0f, 15.0f, 20.0f));
+                editor.isPaintingItemType = ItemType::Apple;
+                editor.isPaintingItem = !editor.isPaintingItem;
+            }
+
+            if (ImGui::Button("Add Laser Gun")) {
+                // worldItems.emplace_back(std::make_unique<Laser>(), glm::vec3(22.0f, 15.0f, 20.0f));
+                editor.isPaintingItemType = ItemType::LaserGun;
+                editor.isPaintingItem = !editor.isPaintingItem;
+            }
 
             ImGui::ColorPicker4("Voxel Color", voxelColor, ImGuiColorEditFlags_NoInputs);
 
@@ -1975,6 +2081,7 @@ private:
         }
 
         destroyPlayerBuffers();
+        destroyItemBuffers();
 
         LOG("Cleanup swapchain");
 
