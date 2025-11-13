@@ -1622,7 +1622,7 @@ private:
                 if (editor.isPlayingPreview) {
                     glm::vec3 playerPos = editor.playerCharacter->getPosition();
                     // glm::vec3 playerPos = editor.playerCharacter->sphere.getPosition();
-                    glm::vec3 newPos = playerPos + glm::vec3(0.0f, 6.0f, 10.0f);
+                    glm::vec3 newPos = playerPos + glm::vec3(0.0f, 10.0f, 16.0f);
                     camera.setPosition(newPos.x, newPos.y, newPos.z);
                     camera.lookAt(playerPos);
 
