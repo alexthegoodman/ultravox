@@ -1581,11 +1581,6 @@ private:
 
             float deltaTime = 1.0f / ImGui::GetIO().Framerate;
 
-            // if (editor.playerCharacter) {
-            //     glm::vec3 playerPos = editor.playerCharacter->getPosition();
-            //     editor.playerCharacter->update(playerPos);
-            // }
-
             if (editor.isPlayingPreview) {
                 physicsSystem.update(deltaTime, 1);
             }
@@ -1608,23 +1603,7 @@ private:
                 if (glm::length(movement) > 0.0f) {
                     movement = glm::normalize(movement) * 1.0f;
 
-                    // editor.playerCharacter->setLinearVelocity(movement);
-
-                    JPH::Vec3 currentVel = editor.playerCharacter->character->GetLinearVelocity();
-                    glm::vec3 currentVelGLM = glm::vec3(currentVel.GetX(), currentVel.GetY(), currentVel.GetZ());
-                    glm::vec3 targetVel = movement; // your input
-                    glm::vec3 deltaVel = targetVel - currentVelGLM;
-
-                    // optionally clamp deltaVel to prevent sudden large jumps
-                    float maxDelta = 0.2f; 
-                    if (glm::length(deltaVel) > maxDelta)
-                        deltaVel = glm::normalize(deltaVel) * maxDelta;
-
-                    editor.playerCharacter->character->AddLinearVelocity(JPH::Vec3(deltaVel.x, deltaVel.y, deltaVel.z));
-
-                    // glm::vec3 playerPos = editor.playerCharacter->getPosition();
-                    // // editor.playerCharacter->update(playerPos);
-                    // editor.playerCharacter->sphere.transform.position = playerPos;
+                    editor.playerCharacter->setLinearVelocity(movement);
                 }
             }
 
@@ -1632,7 +1611,6 @@ private:
                 // Update camera to follow player
                 if (editor.isPlayingPreview) {
                     glm::vec3 playerPos = editor.playerCharacter->getPosition();
-                    // glm::vec3 playerPos = editor.playerCharacter->sphere.getPosition();
                     glm::vec3 newPos = playerPos + glm::vec3(0.0f, 16.0f, 24.0f);
                     camera.setPosition(newPos.x, newPos.y, newPos.z);
                     camera.lookAt(playerPos);
@@ -1640,8 +1618,6 @@ private:
                     editor.playerCharacter->sphere.transform.position = playerPos;
                 }
             }
-
-            
 
             // Update mouse button state
             wasLeftMouseButtonPressed = isLeftMouseButtonPressed;
