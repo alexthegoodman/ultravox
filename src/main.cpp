@@ -1177,7 +1177,7 @@ private:
 
     void cleanupSwapChain() {
         vkDestroyImageView(device, depthImageView, nullptr);
-        vmaDestroyImage(allocator, depthImage, depthImageAllocation);
+        vkDestroyImage(device, depthImage, nullptr);
         vkFreeMemory(device, depthImageMemory, nullptr);
 
         for (auto framebuffer : swapChainFramebuffers) {
