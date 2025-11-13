@@ -115,6 +115,29 @@ public:
     bool isSolid(int x, int y, int z) const {
         return getVoxel(x, y, z).type != 0;
     }
+
+    // Check if voxel is a surface voxel (solid and exposed to air)
+    bool isSurfaceVoxel(int x, int y, int z) const {
+        // If the voxel itself is not solid, it cannot be a surface voxel
+        if (!isSolid(x, y, z)) {
+            return false;
+        }
+
+        // Check 6 neighbors
+        // Using getVoxel handles out-of-bounds by returning an air voxel,
+        // which is exactly what we need for surface detection.
+        if (!isSolid(x + 1, y, z) ||
+            !isSolid(x - 1, y, z) ||
+            !isSolid(x, y + 1, z) ||
+            !isSolid(x, y - 1, z) ||
+            !isSolid(x, y, z + 1) ||
+            !isSolid(x, y, z - 1)) {
+            return true;
+        }
+
+        return false; // All neighbors are solid, so it's an interior voxel
+    }
+    
     
     // Rebuild mesh with greedy meshing
     void rebuildMesh() {

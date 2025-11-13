@@ -417,7 +417,8 @@ private:
         for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
             for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
                 for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
-                    if (chunk->isSolid(x, y, z)) {
+                    // Only insert physics data for surface voxels
+                    if (chunk->isSurfaceVoxel(x, y, z)) {
                         glm::vec3 voxelWorldPos = chunkWorldPos + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
                         Chunk::PhysicsVoxelData physicsData(voxelWorldPos, Chunk::VOXEL_SIZE, chunk->getVoxel(x, y, z).type);
                         physicsOctree.insert(Vector3(voxelWorldPos.x, voxelWorldPos.y, voxelWorldPos.z), physicsData);
@@ -535,7 +536,8 @@ private:
         for (int x = 0; x < Chunk::CHUNK_SIZE; ++x) {
             for (int y = 0; y < Chunk::CHUNK_SIZE; ++y) {
                 for (int z = 0; z < Chunk::CHUNK_SIZE; ++z) {
-                    if (chunk->isSolid(x, y, z)) {
+                    // Only remove physics data for surface voxels
+                    if (chunk->isSurfaceVoxel(x, y, z)) {
                         glm::vec3 voxelWorldPos = chunkWorldPos + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
                         // The predicate ensures we remove the correct PhysicsVoxelData if multiple exist at the same position (though for voxels, it should be unique)
                         physicsOctree.remove(Vector3(voxelWorldPos.x, voxelWorldPos.y, voxelWorldPos.z), 
