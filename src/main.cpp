@@ -305,7 +305,7 @@ private:
     void createPlayerBuffers() {
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
-        createSphereMesh(vertices, indices, 20, 20, 2.0f);
+        createSphereMesh(vertices, indices, 20, 20, 1.0f);
         playerIndexCount = static_cast<uint32_t>(indices.size());
 
         // Create vertex buffer
@@ -1597,19 +1597,19 @@ private:
                 if (glm::length(movement) > 0.0f) {
                     movement = glm::normalize(movement) * 1.0f;
 
-                    editor.playerCharacter->setLinearVelocity(movement);
+                    // editor.playerCharacter->setLinearVelocity(movement);
 
-                    // JPH::Vec3 currentVel = editor.playerCharacter->character->GetLinearVelocity();
-                    // glm::vec3 currentVelGLM = glm::vec3(currentVel.GetX(), currentVel.GetY(), currentVel.GetZ());
-                    // glm::vec3 targetVel = movement; // your input
-                    // glm::vec3 deltaVel = targetVel - currentVelGLM;
+                    JPH::Vec3 currentVel = editor.playerCharacter->character->GetLinearVelocity();
+                    glm::vec3 currentVelGLM = glm::vec3(currentVel.GetX(), currentVel.GetY(), currentVel.GetZ());
+                    glm::vec3 targetVel = movement; // your input
+                    glm::vec3 deltaVel = targetVel - currentVelGLM;
 
-                    // // optionally clamp deltaVel to prevent sudden large jumps
-                    // float maxDelta = 0.2f; 
-                    // if (glm::length(deltaVel) > maxDelta)
-                    //     deltaVel = glm::normalize(deltaVel) * maxDelta;
+                    // optionally clamp deltaVel to prevent sudden large jumps
+                    float maxDelta = 0.2f; 
+                    if (glm::length(deltaVel) > maxDelta)
+                        deltaVel = glm::normalize(deltaVel) * maxDelta;
 
-                    // editor.playerCharacter->character->AddLinearVelocity(JPH::Vec3(deltaVel.x, deltaVel.y, deltaVel.z));
+                    editor.playerCharacter->character->AddLinearVelocity(JPH::Vec3(deltaVel.x, deltaVel.y, deltaVel.z));
 
                     // glm::vec3 playerPos = editor.playerCharacter->getPosition();
                     // // editor.playerCharacter->update(playerPos);
