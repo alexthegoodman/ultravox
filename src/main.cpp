@@ -333,7 +333,7 @@ private:
     void createItemBuffers() {
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
-        createSphereMesh(vertices, indices, 20, 20, 0.5f);
+        createSphereMesh(vertices, indices, 20, 20, 4.0f);
         itemIndexCount = static_cast<uint32_t>(indices.size());
 
         // Create vertex buffer
@@ -1752,7 +1752,7 @@ private:
 
                 // --- Update camera position ---
                 glm::vec3 playerPos = editor.playerCharacter->getPosition();
-                camera.setPosition(playerPos.x, playerPos.y + 1.7f, playerPos.z);
+                camera.setPosition(playerPos.x, playerPos.y + 4.7f, playerPos.z);
 
                 editor.playerCharacter->sphere.transform.position = playerPos;
             }
