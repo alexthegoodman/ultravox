@@ -1,19 +1,18 @@
 #pragma once
-
 #include <vector>
 #include <glm/glm.hpp>
 
 #include "types.h"
 
-class Tree {
+class House {
 public:
-    // Constructor
-    Tree(const glm::vec3& position, int recommendedVoxelCount);
+    House(const glm::vec3& position, int baseWidth = 6, int baseDepth = 6, int baseHeight = 4);
 
-    // Generates the voxels for the tree
     std::vector<VoxelInfo> generate() const;
 
 private:
     glm::vec3 basePosition;
-    int voxelCount;
+    int width;
+    int depth;
+    int height;
 };

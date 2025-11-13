@@ -36,6 +36,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "types.h"
 #include "Logger.h"
 #include "Vertex.h"
 #include "Voxel.cpp"
@@ -49,6 +50,16 @@
 #include "Sphere.h"
 #include "Light.h"
 #include "Tree.h"
+#include "House.h"
+
+// Custom operator< for glm::vec3 to allow its use in std::map
+namespace glm {
+    bool operator<(const vec3& a, const vec3& b) {
+        if (a.x != b.x) return a.x < b.x;
+        if (a.y != b.y) return a.y < b.y;
+        return a.z < b.z;
+    }
+}
 
 const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
@@ -238,7 +249,7 @@ private:
     float prevPanY = 0.0f;
     float panX = prevPanX;
     float panY = prevPanY;
-
+    
     // Painting state
     bool isLeftMouseButtonPressed = false;
     bool wasLeftMouseButtonPressed = false;
@@ -1637,7 +1648,7 @@ private:
             isLeftMouseButtonPressed = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
 
             // Painting logic
-            if (editor.isPainting && isLeftMouseButtonPressed) {
+            if ((editor.isPainting || editor.isPaintingTrees || editor.isPaintingHouse) && isLeftMouseButtonPressed) {
                 double mouseX, mouseY;
                 glfwGetCursorPos(window, &mouseX, &mouseY);
 
@@ -1686,9 +1697,27 @@ private:
                         
                         LOG("Add Voxel!");
 
-                        // Add the voxel
-                        editor.chunkManager.setVoxelWorld(newVoxelPos, Chunk::VoxelData(glm::vec4(voxelColor[0], voxelColor[1], voxelColor[2], voxelColor[3]), 1)); // Red voxel
-                        paintedVoxelsInStroke.insert(newVoxelPos);
+                        if (editor.isPainting) {
+                            // Add the voxel
+                            editor.chunkManager.setVoxelWorld(newVoxelPos, Chunk::VoxelData(glm::vec4(voxelColor[0], voxelColor[1], voxelColor[2], voxelColor[3]), 1)); // Red voxel
+                            paintedVoxelsInStroke.insert(newVoxelPos);
+                        } else if (editor.isPaintingTrees) {
+                            Tree tree(newVoxelPos, 100);
+                            auto voxels = tree.generate();
+                            for (const auto& voxelInfo : voxels) {
+                                editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
+                            }
+
+                            editor.isPaintingTrees = false; // auto toggle off to avoid too many instances
+                        } else if (editor.isPaintingHouse) {
+                            House house(newVoxelPos, 6, 6, 4);
+                            auto voxels = house.generate();
+                            for (const auto& voxelInfo : voxels) {
+                                editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
+                            }
+
+                            editor.isPaintingHouse = false;
+                        }
                     }
                 }
             } else if (!isLeftMouseButtonPressed && wasLeftMouseButtonPressed) {
@@ -1825,11 +1854,11 @@ private:
             ImGui::End();
 
             if (ImGui::Button("Add Tree")) {
-                Tree tree(glm::vec3(10.0f, 1.0f, 10.0f), 100);
-                auto voxels = tree.generate();
-                for (const auto& voxelInfo : voxels) {
-                    editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
-                }
+                editor.isPaintingTrees = !editor.isPaintingTrees;
+            }
+
+            if (ImGui::Button("Add House")) {
+                editor.isPaintingHouse = !editor.isPaintingHouse;
             }
 
             if (ImGui::Button("Add Point Light")) {

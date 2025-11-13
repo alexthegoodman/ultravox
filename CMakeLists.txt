@@ -36,6 +36,7 @@ add_executable(${PROJECT_NAME}
     src/PlayerCharacter.cpp
     src/Sphere.cpp
     src/Tree.cpp
+    src/House.cpp
     src/TerrainGenerator.cpp
     # src/ChunkManager.cpp
     # other files currently included in main.cpp

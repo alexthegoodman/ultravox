@@ -20,6 +20,8 @@ public:
     // state
     bool isPlayingPreview = false;
     bool isPainting = false;
+    bool isPaintingTrees = false;
+    bool isPaintingHouse = false;
 
     Editor() {
         // LOG("Starting Editor");
