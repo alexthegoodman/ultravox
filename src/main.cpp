@@ -1584,26 +1584,23 @@ private:
             if (editor.isPlayingPreview) {
                 physicsSystem.update(deltaTime, 1);
             }
-
+            
             if (editor.isPlayingPreview && editor.playerCharacter) {
                 glm::vec3 movement(0.0f);
-                if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-                    movement.z -= 1.0f;
-                }
-                if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-                    movement.z += 1.0f;
-                }
-                if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-                    movement.x -= 1.0f;
-                }
-                if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-                    movement.x += 1.0f;
-                }
+                if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) movement.z -= 1.0f;
+                if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) movement.z += 1.0f;
+                if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) movement.x -= 1.0f;
+                if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) movement.x += 1.0f;
 
                 if (glm::length(movement) > 0.0f) {
-                    movement = glm::normalize(movement) * 1.0f;
+                    movement = glm::normalize(movement) * 2.0f; // speed
 
-                    editor.playerCharacter->setLinearVelocity(movement);
+                    // ✅ Preserve vertical velocity (let physics handle gravity)
+                    JPH::Vec3 currentVel = editor.playerCharacter->character->GetLinearVelocity();
+                    currentVel.SetX(movement.x);
+                    currentVel.SetZ(movement.z);
+
+                    editor.playerCharacter->character->SetLinearVelocity(currentVel);
                 }
             }
 
