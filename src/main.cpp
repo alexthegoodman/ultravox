@@ -16,6 +16,7 @@
 #include <imgui_impl_vulkan.h>
 #include <ImGuizmo.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include <iostream>
 #include <vector>
@@ -262,6 +263,8 @@ private:
     float prevPanY = 0.0f;
     float panX = prevPanX;
     float panY = prevPanY;
+    float yawDeg = 0.0f;
+    float pitchDeg = 0.0f;
     
     // Painting state
     bool isLeftMouseButtonPressed = false;
@@ -1641,35 +1644,117 @@ private:
                 physicsSystem.update(deltaTime, 1);
             }
             
+            // if (editor.isPlayingPreview && editor.playerCharacter) {
+            //     glm::vec3 movement(0.0f);
+            //     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) movement.z -= 1.0f;
+            //     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) movement.z += 1.0f;
+            //     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) movement.x -= 1.0f;
+            //     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) movement.x += 1.0f;
+
+            //     if (glm::length(movement) > 0.0f) {
+            //         movement = glm::normalize(movement) * 2.0f; // speed
+
+            //         // ✅ Preserve vertical velocity (let physics handle gravity)
+            //         JPH::Vec3 currentVel = editor.playerCharacter->character->GetLinearVelocity();
+            //         currentVel.SetX(movement.x);
+            //         currentVel.SetZ(movement.z);
+
+            //         editor.playerCharacter->character->SetLinearVelocity(currentVel);
+            //     }
+            // }
+
+            // if (editor.playerCharacter) {                
+                
+            //     if (editor.isPlayingPreview) {
+            //         glm::vec3 playerPos = editor.playerCharacter->getPosition();
+                    
+            //         // 3rd person follow
+            //         glm::vec3 newPos = playerPos + glm::vec3(0.0f, 16.0f, 24.0f);
+                    
+            //         camera.setPosition(newPos.x, newPos.y, newPos.z);
+            //         camera.lookAt(playerPos);
+
+            //         editor.playerCharacter->sphere.transform.position = playerPos;
+            //     }
+            // }
+
             if (editor.isPlayingPreview && editor.playerCharacter) {
-                glm::vec3 movement(0.0f);
-                if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) movement.z -= 1.0f;
-                if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) movement.z += 1.0f;
-                if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) movement.x -= 1.0f;
-                if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) movement.x += 1.0f;
+                // --- Mouse look ---
+                // static double lastX, lastY;
+                // static bool firstMouse = true;
+                // double xpos, ypos;
+                // glfwGetCursorPos(window, &xpos, &ypos);
+                // if (firstMouse) { lastX = xpos; lastY = ypos; firstMouse = false; }
+                // float xoffset = (xpos - lastX) * camera.mouseSensitivity;
+                // float yoffset = (lastY - ypos) * camera.mouseSensitivity;
+                // lastX = xpos; lastY = ypos;
 
-                if (glm::length(movement) > 0.0f) {
-                    movement = glm::normalize(movement) * 2.0f; // speed
+                // camera.yaw(xoffset);
+                // camera.pitch(yoffset);
 
-                    // ✅ Preserve vertical velocity (let physics handle gravity)
-                    JPH::Vec3 currentVel = editor.playerCharacter->character->GetLinearVelocity();
-                    currentVel.SetX(movement.x);
-                    currentVel.SetZ(movement.z);
+                // // Clamp pitch
+                // float pitch = camera.getPitch();
+                // pitch = glm::clamp(pitch, -89.0f, 89.0f);
+                // camera.setPitch(pitch);
 
-                    editor.playerCharacter->character->SetLinearVelocity(currentVel);
+                double xpos, ypos;
+                glfwGetCursorPos(window, &xpos, &ypos);
+
+                static double lastX = xpos;
+                static double lastY = ypos;
+                static bool firstMouse = true;
+
+                if (firstMouse) {
+                    lastX = xpos;
+                    lastY = ypos;
+                    firstMouse = false;
                 }
-            }
 
-            if (editor.playerCharacter) {                
-                // Update camera to follow player
-                if (editor.isPlayingPreview) {
-                    glm::vec3 playerPos = editor.playerCharacter->getPosition();
-                    glm::vec3 newPos = playerPos + glm::vec3(0.0f, 16.0f, 24.0f);
-                    camera.setPosition(newPos.x, newPos.y, newPos.z);
-                    camera.lookAt(playerPos);
+                float xoffset = (xpos - lastX) * camera.mouseSensitivity;
+                float yoffset = (lastY - ypos) * camera.mouseSensitivity; // reversed Y
+                lastX = xpos;
+                lastY = ypos;
 
-                    editor.playerCharacter->sphere.transform.position = playerPos;
+                yawDeg   -= xoffset;
+                pitchDeg += yoffset;
+
+                // Clamp pitch to avoid flipping upside down
+                pitchDeg = glm::clamp(pitchDeg, -89.0f, 89.0f);
+
+                // Rebuild quaternion from yaw/pitch directly
+                glm::quat yawQuat   = glm::angleAxis(glm::radians(yawDeg),   glm::vec3(0.0f, 1.0f, 0.0f));
+                glm::quat pitchQuat = glm::angleAxis(glm::radians(pitchDeg), glm::vec3(1.0f, 0.0f, 0.0f));
+                camera.rotation = glm::normalize(yawQuat * pitchQuat);
+
+                camera.updateTarget();
+
+                // --- Movement ---
+                glm::vec3 input(0.0f);
+                if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) input.z -= 1.0f;
+                if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) input.z += 1.0f;
+                if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) input.x -= 1.0f;
+                if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) input.x += 1.0f;
+
+                if (glm::length(input) > 0.0f) {
+                    input = glm::normalize(input);
+                    glm::vec3 forward = glm::normalize(camera.rotation * glm::vec3(0.0f, 0.0f, -1.0f));
+                    glm::vec3 right   = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
+
+                    glm::vec3 moveDir = forward * (-input.z) + right * input.x;
+                    moveDir.y = 0.0f;
+                    moveDir = glm::normalize(moveDir) * 4.0f;
+
+                    JPH::Vec3 vel = editor.playerCharacter->character->GetLinearVelocity();
+                    vel.SetX(moveDir.x);
+                    vel.SetZ(moveDir.z);
+                    editor.playerCharacter->character->SetLinearVelocity(vel);
                 }
+
+                // --- Update camera position ---
+                glm::vec3 playerPos = editor.playerCharacter->getPosition();
+                camera.setPosition(playerPos.x, playerPos.y + 1.7f, playerPos.z);
+
+                editor.playerCharacter->sphere.transform.position = playerPos;
             }
 
             // Update mouse button state
@@ -1991,44 +2076,16 @@ private:
             if (editor.playerCharacter) {
                 if (ImGui::Button(editor.isPlayingPreview ? "Stop Preview" : "Play Preview")) {
                     if (editor.isPlayingPreview) {
+                        camera.fov = glm::radians(22.5f);
                         editor.stopPlayingPreview();
                     } else {
+                        camera.fov = glm::radians(30.0f);
                         editor.startPlayingPreview();
                     }
                 }
             }
             
             ImGui::End();
-
-            // if (editor.isPlayingPreview && editor.playerCharacter) {
-            //     glm::vec3 movement(0.0f);
-            //     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            //         // LOG("W (FORWARD) PRESS");
-            //         movement.z -= 1.0f;
-            //     }
-            //     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            //         movement.z += 1.0f;
-            //     }
-            //     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            //         movement.x -= 1.0f;
-            //     }
-            //     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            //         movement.x += 1.0f;
-            //     }
-
-            //     if (glm::length(movement) > 0.0f) {
-            //         movement = glm::normalize(movement) * 5.0f;
-            //     }
-                
-            //     editor.playerCharacter->setLinearVelocity(movement);
-            //     editor.playerCharacter->update();
-
-            //     // Update camera to follow player
-            //     glm::vec3 playerPos = editor.playerCharacter->getPosition();
-            //     glm::vec3 newPos = playerPos + glm::vec3(0.0f, 2.0f, 5.0f);
-            //     camera.setPosition(newPos.x, newPos.y, newPos.z);
-            //     camera.lookAt(playerPos);
-            // }
 
             // Render ImGui
             ImGui::Render();

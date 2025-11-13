@@ -36,7 +36,7 @@ public:
           nearPlane(0.1f),
           farPlane(1000.0f),
           zoom(1.0f),
-          mouseSensitivity(0.1f),
+          mouseSensitivity(0.5f),
           resetZ(5.0f)
     {
         defaultPosition3D = position3D;
