@@ -305,7 +305,7 @@ private:
     void createPlayerBuffers() {
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
-        createSphereMesh(vertices, indices, 20, 20, 0.5f);
+        createSphereMesh(vertices, indices, 20, 20, 2.0f);
         playerIndexCount = static_cast<uint32_t>(indices.size());
 
         // Create vertex buffer
