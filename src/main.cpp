@@ -300,13 +300,22 @@ private:
         pickPhysicalDevice();
         createLogicalDevice();
         createSwapChain();
+
+        vkDeviceWaitIdle(device);
+
         LOG("Initializing Image Views");
         createImageViews();
+
+        vkDeviceWaitIdle(device);
         
         LOG("Initializing Render Pass");
         createRenderPass();
 
+        vkDeviceWaitIdle(device);
+
         createCommandPool();
+
+        vkDeviceWaitIdle(device);
 
         LOG("Initializing Depth Resources");
         createDepthResources();
@@ -594,7 +603,12 @@ private:
 
         VkPhysicalDeviceVulkan12Features features12{};
         features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-        features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE; // Enable dynamic indexing
+        // features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        features12.runtimeDescriptorArray = VK_TRUE;
+        features12.descriptorIndexing = VK_TRUE;
+        features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+        features12.descriptorBindingPartiallyBound = VK_TRUE;
+        features12.descriptorBindingVariableDescriptorCount = VK_TRUE;
 
         VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -2288,6 +2302,11 @@ private:
             vmaDestroyBuffer(allocator, buffers.first, buffers.second);
         }
         chunkIndexBuffers.clear();
+
+        // destroy here, not in class, to be centralized for now
+        if (editor.playerCharacter) {
+            physicsSystem.destroyCharacter(editor.playerCharacter->character);
+        }
 
         physicsSystem.shutdown();
 
