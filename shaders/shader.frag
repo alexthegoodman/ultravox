@@ -15,6 +15,7 @@ struct PointLight {
 };
 
 const int MAX_LIGHTS = 4;
+const int MAX_TEXTURES = 12;
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     mat4 view;
@@ -24,7 +25,8 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     PointLight lights[MAX_LIGHTS];
 } ubo;
 
-layout(set = 0, binding = 1) uniform sampler2D texSamplers[]; // New: Array of texture samplers
+// layout(set = 0, binding = 1) uniform sampler2D texSamplers[]; // New: Array of texture samplers
+layout(set = 0, binding = 1) uniform sampler2D texSamplers[MAX_TEXTURES];
 
 void main() {
     vec3 normal = normalize(fragNormal);
@@ -67,7 +69,8 @@ void main() {
     }
 
     // Sample the texture using the texture ID
-    vec4 texColor = texture(texSamplers[int(fragTextureId)], fragTexCoord);
+    // vec4 texColor = texture(texSamplers[int(fragTextureId)], fragTexCoord);
+    vec4 texColor = texture(texSamplers[nonuniformEXT(int(fragTextureId))], fragTexCoord);
 
     vec3 result = (ambient + lighting) * texColor.rgb; // Use texture color
     outColor = vec4(result, texColor.a); // Use texture alpha

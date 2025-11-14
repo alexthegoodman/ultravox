@@ -72,6 +72,7 @@ const uint32_t WIDTH = 1280;
 const uint32_t HEIGHT = 720;
 const int MAX_FRAMES_IN_FLIGHT = 2;
 const int MAX_LIGHTS = 4;
+const int MAX_TEXTURES = 12;
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -1232,9 +1233,11 @@ private:
         VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
+        
+        VkResult submitRes = vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]);
 
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to submit draw command buffer!");
+        if (submitRes != VK_SUCCESS) {
+            throw std::runtime_error(VkResultToString(submitRes));
         }
 
         VkPresentInfoKHR presentInfo{};
@@ -1331,10 +1334,20 @@ private:
 
         VkDescriptorSetLayoutBinding samplerLayoutBinding{};
         samplerLayoutBinding.binding = 1;
-        samplerLayoutBinding.descriptorCount = 1;
+        // samplerLayoutBinding.descriptorCount = 1;
+        // samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        // samplerLayoutBinding.pImmutableSamplers = nullptr;
+        // samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        
+
+        samplerLayoutBinding.descriptorCount = MAX_TEXTURES;  // must match runtime array size
         samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         samplerLayoutBinding.pImmutableSamplers = nullptr;
         samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        // samplerLayoutBinding.bindingFlags =
+        //     VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+        //     VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
 
         std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -1553,13 +1566,30 @@ private:
             descriptorWrites[0].descriptorCount = 1;
             descriptorWrites[0].pBufferInfo = &bufferInfo;
 
+            // descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            // descriptorWrites[1].dstSet = descriptorSets[i];
+            // descriptorWrites[1].dstBinding = 1;
+            // descriptorWrites[1].dstArrayElement = 0;
+            // descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            // descriptorWrites[1].descriptorCount = 1;
+            // descriptorWrites[1].pImageInfo = &imageInfo;
+
+            std::vector<VkDescriptorImageInfo> imageInfos(MAX_TEXTURES);
+
+            for (int t = 0; t < MAX_TEXTURES; t++) {
+                imageInfos[t].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfos[t].imageView = textureManager->getTextureImageView(t);
+                imageInfos[t].sampler = textureManager->getTextureSampler();
+            }
+
             descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[1].dstSet = descriptorSets[i];
             descriptorWrites[1].dstBinding = 1;
             descriptorWrites[1].dstArrayElement = 0;
             descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[1].descriptorCount = 1;
-            descriptorWrites[1].pImageInfo = &imageInfo;
+            descriptorWrites[1].descriptorCount = MAX_TEXTURES;
+            descriptorWrites[1].pImageInfo = imageInfos.data();
+
 
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
