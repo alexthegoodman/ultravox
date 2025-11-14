@@ -103,3 +103,16 @@ add_custom_target(copy_shaders ALL
 
 # Make your executable depend on them
 add_dependencies(${PROJECT_NAME} copy_shaders)
+
+set(TEXTURE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/textures)
+set(TEXTURE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/textures)
+
+file(GLOB TEXTURE_FILES ${SHADER_DIR}/*.jpg ${SHADER_DIR}/*.png)
+
+add_custom_target(copy_textures ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${TEXTURE_DIR} ${TEXTURE_OUTPUT_DIR}
+    COMMENT "Copying textures..."
+)
+
+# Make your executable depend on them
+add_dependencies(${PROJECT_NAME} copy_textures)

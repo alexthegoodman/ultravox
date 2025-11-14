@@ -322,7 +322,7 @@ private:
         textureManager = new TextureManager(device, physicalDevice, commandPool, graphicsQueue);
         editor.textureManager = textureManager; // Set the texture manager for the editor
         // Load textures from the "textures" directory
-        for (const auto& entry : std::filesystem::directory_iterator("textures")) {
+        for (const auto& entry : std::filesystem::directory_iterator("../../textures")) {
             if (entry.is_regular_file()) {
                 textureManager->loadTexture(entry.path().string());
             }
