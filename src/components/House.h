@@ -6,7 +6,7 @@
 
 class House {
 public:
-    House(const glm::vec3& position, int baseWidth = 6, int baseDepth = 6, int baseHeight = 4);
+    House(const glm::vec3& position, int baseWidth = 6, int baseDepth = 6, int baseHeight = 4, int wallTextureId = 0, int roofTextureId = 0, int doorTextureId = 0);
 
     std::vector<VoxelInfo> generate() const;
 
@@ -15,4 +15,7 @@ private:
     int width;
     int depth;
     int height;
+    int wallTextureId;
+    int roofTextureId;
+    int doorTextureId;
 };

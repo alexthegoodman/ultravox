@@ -7,6 +7,7 @@
 struct VoxelInfo {
     glm::vec3 position;
     glm::vec4 color;
+    int textureId;
 };
 
 enum class ObjectType : uint32_t {

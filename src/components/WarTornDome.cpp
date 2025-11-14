@@ -8,8 +8,8 @@
     #define M_PI 3.14159265358979323846
 #endif
 
-WarTornDome::WarTornDome(const glm::vec3& position, float radius, float damageFactor, int debrisCount)
-    : basePosition(position), radius(radius), damageFactor(damageFactor), debrisCount(debrisCount) {
+WarTornDome::WarTornDome(const glm::vec3& position, float radius, float damageFactor, int debrisCount, int domeTextureId, int debrisTextureId)
+    : basePosition(position), radius(radius), damageFactor(damageFactor), debrisCount(debrisCount), domeTextureId(domeTextureId), debrisTextureId(debrisTextureId) {
     static bool seeded = false;
     if (!seeded) {
         srand(static_cast<unsigned int>(time(0)));
@@ -50,7 +50,7 @@ std::vector<VoxelInfo> WarTornDome::generate() const {
                 glm::vec4 color = (rand() % 100 < 15) ? scorchedColor : metalColor;
 
                 glm::vec3 voxelPos = basePosition + glm::vec3(x, y, z) * voxel;
-                voxels.push_back({voxelPos, color});
+                voxels.push_back({voxelPos, color, domeTextureId});
             }
         }
     }
@@ -70,7 +70,7 @@ std::vector<VoxelInfo> WarTornDome::generate() const {
             for (int dy = 0; dy < size; ++dy) {
                 for (int dz = 0; dz < size; ++dz) {
                     glm::vec3 voxelPos = debrisPos + glm::vec3(dx, dy, dz) * voxel;
-                    voxels.push_back({voxelPos, debrisColor});
+                    voxels.push_back({voxelPos, debrisColor, debrisTextureId});
                 }
             }
         }

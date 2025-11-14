@@ -29,6 +29,15 @@ public:
     ItemType isPaintingItemType = ItemType::Apple; // defaults to Apple
     int selectedTextureId = 0; // Index of the currently selected texture
 
+    // Texture IDs for components
+    int houseWallTextureId = 0;
+    int houseRoofTextureId = 0;
+    int houseDoorTextureId = 0;
+    int treeTrunkTextureId = 0;
+    int treeLeavesTextureId = 0;
+    int domeTextureId = 0;
+    int domeDebrisTextureId = 0;
+
     Editor() {
         // LOG("Starting Editor");
         

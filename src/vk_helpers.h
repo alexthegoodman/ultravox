@@ -1,4 +1,17 @@
-#include "helpers.h"
+#pragma once
+
+#define _USE_MATH_DEFINES
+#include <cmath>
+
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
+#include <glm/glm.hpp>
+#include <vulkan/vulkan.h>
+#include "Octree.h" // For Vector3 definition
+#include "Vertex.h"
+#include <vector>
 #include <stdexcept>
 
 uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {

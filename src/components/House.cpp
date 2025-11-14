@@ -3,8 +3,8 @@
 #include <cstdlib>
 #include <ctime>
 
-House::House(const glm::vec3& position, int baseWidth, int baseDepth, int baseHeight)
-    : basePosition(position), width(baseWidth), depth(baseDepth), height(baseHeight) {
+House::House(const glm::vec3& position, int baseWidth, int baseDepth, int baseHeight, int wallTextureId, int roofTextureId, int doorTextureId)
+    : basePosition(position), width(baseWidth), depth(baseDepth), height(baseHeight), wallTextureId(wallTextureId), roofTextureId(roofTextureId), doorTextureId(doorTextureId) {
     static bool seeded = false;
     if (!seeded) {
         srand(static_cast<unsigned int>(time(0)));
@@ -42,10 +42,10 @@ std::vector<VoxelInfo> House::generate() const {
 
                 if (isDoor) {
                     glm::vec3 voxelPos = basePosition + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
-                    voxels.push_back({voxelPos, doorColor});
+                    voxels.push_back({voxelPos, doorColor, doorTextureId});
                 } else if (!isWindow) {
                     glm::vec3 voxelPos = basePosition + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
-                    voxels.push_back({voxelPos, wallColor});
+                    voxels.push_back({voxelPos, wallColor, wallTextureId});
                 }
             }
         }
@@ -62,7 +62,7 @@ std::vector<VoxelInfo> House::generate() const {
                 if (x < 0 || z < 0 || x >= w || z >= d) continue;
 
                 glm::vec3 voxelPos = basePosition + glm::vec3(x, h + y, z) * Chunk::VOXEL_SIZE;
-                voxels.push_back({voxelPos, roofColor});
+                voxels.push_back({voxelPos, roofColor, roofTextureId});
             }
         }
     }
@@ -72,7 +72,7 @@ std::vector<VoxelInfo> House::generate() const {
         for (int z = 1; z < d - 1; ++z) {
             if (rand() % 10 < 2) { // ~20% chance
                 glm::vec3 voxelPos = basePosition + glm::vec3(x, 2, z) * Chunk::VOXEL_SIZE;
-                voxels.push_back({voxelPos, windowColor});
+                voxels.push_back({voxelPos, windowColor, 0});
             }
         }
     }

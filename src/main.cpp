@@ -1856,30 +1856,55 @@ private:
                             editor.chunkManager.setVoxelWorld(newVoxelPos, Chunk::VoxelData(glm::vec4(voxelColor[0], voxelColor[1], voxelColor[2], voxelColor[3]), 1, editor.selectedTextureId)); // Red voxel
                             paintedVoxelsInStroke.insert(newVoxelPos);
                         } else if (editor.isPaintingComponent) {
-                            if (editor.isPaintingComponentType == ComponentType::Tree) {
-                                Tree tree(newVoxelPos, 100);
-                                auto voxels = tree.generate();
-                                for (const auto& voxelInfo : voxels) {
-                                    editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
-                                }
+                            // if (editor.isPaintingComponentType == ComponentType::Tree) {
+                            //     Tree tree(newVoxelPos, 100);
+                            //     auto voxels = tree.generate();
+                            //     for (const auto& voxelInfo : voxels) {
+                            //         editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
+                            //     }
 
-                                editor.isPaintingComponent = false; // auto toggle off to avoid too many instances
-                            } else  if (editor.isPaintingComponentType == ComponentType::House) {
-                                House house(newVoxelPos, 6, 6, 4);
-                                auto voxels = house.generate();
-                                for (const auto& voxelInfo : voxels) {
-                                    editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
-                                }
+                            //     editor.isPaintingComponent = false; // auto toggle off to avoid too many instances
+                            // } else  if (editor.isPaintingComponentType == ComponentType::House) {
+                            //     House house(newVoxelPos, 6, 6, 4);
+                            //     auto voxels = house.generate();
+                            //     for (const auto& voxelInfo : voxels) {
+                            //         editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
+                            //     }
 
-                                editor.isPaintingComponent = false;
-                            } else  if (editor.isPaintingComponentType == ComponentType::WarTornDome) {
-                                WarTornDome dome(newVoxelPos, 48.0, 0.4f, 50);
-                                auto voxels = dome.generate();
-                                for (const auto& voxelInfo : voxels) {
-                                    editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
-                                }
+                            //     editor.isPaintingComponent = false;
+                            // } else  if (editor.isPaintingComponentType == ComponentType::WarTornDome) {
+                            //     WarTornDome dome(newVoxelPos, 48.0, 0.4f, 50);
+                            //     auto voxels = dome.generate();
+                            //     for (const auto& voxelInfo : voxels) {
+                            //         editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1));
+                            //     }
 
-                                editor.isPaintingComponent = false;
+                            //     editor.isPaintingComponent = false;
+                            // }
+
+                            if (editor.isPaintingComponent) {
+                                if (editor.isPaintingComponentType == ComponentType::Tree) {
+                                    Tree tree(newVoxelPos, 100, editor.treeTrunkTextureId, editor.treeLeavesTextureId);
+                                    auto voxels = tree.generate();
+                                    for (const auto& voxelInfo : voxels) {
+                                        editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1, voxelInfo.textureId));
+                                    }
+                                    editor.isPaintingComponent = false;
+                                } else if (editor.isPaintingComponentType == ComponentType::House) {
+                                    House house(newVoxelPos, 6, 6, 4, editor.houseWallTextureId, editor.houseRoofTextureId, editor.houseDoorTextureId);
+                                    auto voxels = house.generate();
+                                    for (const auto& voxelInfo : voxels) {
+                                        editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1, voxelInfo.textureId));
+                                    }
+                                    editor.isPaintingComponent = false;
+                                } else if (editor.isPaintingComponentType == ComponentType::WarTornDome) {
+                                    WarTornDome dome(newVoxelPos, 48.0, 0.4f, 50, editor.domeTextureId, editor.domeDebrisTextureId);
+                                    auto voxels = dome.generate();
+                                    for (const auto& voxelInfo : voxels) {
+                                        editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1, voxelInfo.textureId));
+                                    }
+                                    editor.isPaintingComponent = false;
+                                }
                             }
                         } else if (editor.isPaintingItem) {
                             if (editor.isPaintingItemType == ItemType::Apple) {
@@ -2055,6 +2080,28 @@ private:
             }
 
             ImGui::End();
+
+            // Component Texture Selection
+            if (editor.textureManager && !editor.textureManager->getTextureNames().empty()) {
+                const std::vector<std::string>& textureNames = editor.textureManager->getTextureNames();
+                std::vector<const char*> c_str_textureNames;
+                for (const auto& name : textureNames) {
+                    c_str_textureNames.push_back(name.c_str());
+                }
+
+                ImGui::Text("Tree Textures");
+                ImGui::Combo("Trunk", &editor.treeTrunkTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                ImGui::Combo("Leaves", &editor.treeLeavesTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+
+                ImGui::Text("House Textures");
+                ImGui::Combo("Walls", &editor.houseWallTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                ImGui::Combo("Roof", &editor.houseRoofTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                ImGui::Combo("Door", &editor.houseDoorTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+
+                ImGui::Text("Dome Textures");
+                ImGui::Combo("Dome", &editor.domeTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                ImGui::Combo("Debris", &editor.domeDebrisTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+            }
 
             if (ImGui::Button("Add Tree")) {
                 editor.isPaintingComponent = true;

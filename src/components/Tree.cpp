@@ -3,8 +3,8 @@
 #include <cstdlib> // For rand()
 #include <ctime>   // For time()
 
-Tree::Tree(const glm::vec3& position, int recommendedVoxelCount)
-    : basePosition(position), voxelCount(recommendedVoxelCount) {
+Tree::Tree(const glm::vec3& position, int recommendedVoxelCount, int trunkTextureId, int leavesTextureId)
+    : basePosition(position), voxelCount(recommendedVoxelCount), trunkTextureId(trunkTextureId), leavesTextureId(leavesTextureId) {
     // Seed the random number generator once
     static bool seeded = false;
     if (!seeded) {
@@ -26,7 +26,7 @@ std::vector<VoxelInfo> Tree::generate() const {
     // Generate trunk
     for (int i = 0; i < trunkHeight; ++i) {
         glm::vec3 voxelPos = basePosition + glm::vec3(0, i * Chunk::VOXEL_SIZE, 0);
-        voxels.push_back({voxelPos, trunkColor});
+        voxels.push_back({voxelPos, trunkColor, trunkTextureId});
     }
 
     // Generate leaves (canopy)
@@ -47,7 +47,7 @@ std::vector<VoxelInfo> Tree::generate() const {
                 glm::vec4 leafColor(r, g, b, 1.0f);
 
                 glm::vec3 voxelPos = canopyCenter + glm::vec3(x, y, z) * Chunk::VOXEL_SIZE;
-                voxels.push_back({voxelPos, leafColor});
+                voxels.push_back({voxelPos, leafColor, leavesTextureId});
             }
         }
     }

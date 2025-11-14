@@ -7,7 +7,7 @@
 
 class WarTornDome {
 public:
-    WarTornDome(const glm::vec3& position, float radius = 6.0f, float damageFactor = 0.25f, int debrisCount = 50);
+    WarTornDome(const glm::vec3& position, float radius = 6.0f, float damageFactor = 0.25f, int debrisCount = 50, int domeTextureId = 0, int debrisTextureId = 0);
 
     std::vector<VoxelInfo> generate() const;
 
@@ -16,4 +16,6 @@ private:
     float radius;
     float damageFactor; // 0.0 = pristine, 1.0 = almost destroyed
     int debrisCount;
+    int domeTextureId;
+    int debrisTextureId;
 };

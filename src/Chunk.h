@@ -463,27 +463,27 @@ private:
     }
 
     // Alternative: If you truly need double-sided faces
-    void addDoubleSidedFace(const glm::vec3& pos, const glm::vec4& color, int faceIndex) {
-        // Add the normal face
-        addFace(pos, color, faceIndex);
+    // void addDoubleSidedFace(const glm::vec3& pos, const glm::vec4& color, int faceIndex) {
+    //     // Add the normal face
+    //     addFace(pos, color, faceIndex);
         
-        // Add the reverse face by duplicating vertices with flipped normal
-        uint32_t baseIndex = static_cast<uint32_t>(vertexCache.size());
+    //     // Add the reverse face by duplicating vertices with flipped normal
+    //     uint32_t baseIndex = static_cast<uint32_t>(vertexCache.size());
         
-        // Copy the last 4 vertices we just added
-        for (int i = 0; i < 4; ++i) {
-            Vertex v = vertexCache[vertexCache.size() - 4 + i];
-            v.normal = -v.normal; // Flip the normal
-            vertexCache.push_back(v);
-        }
+    //     // Copy the last 4 vertices we just added
+    //     for (int i = 0; i < 4; ++i) {
+    //         Vertex v = vertexCache[vertexCache.size() - 4 + i];
+    //         v.normal = -v.normal; // Flip the normal
+    //         vertexCache.push_back(v);
+    //     }
         
-        // Add indices with reversed winding order
-        indexCache.push_back(baseIndex + 0);
-        indexCache.push_back(baseIndex + 2);
-        indexCache.push_back(baseIndex + 1);
+    //     // Add indices with reversed winding order
+    //     indexCache.push_back(baseIndex + 0);
+    //     indexCache.push_back(baseIndex + 2);
+    //     indexCache.push_back(baseIndex + 1);
         
-        indexCache.push_back(baseIndex + 0);
-        indexCache.push_back(baseIndex + 3);
-        indexCache.push_back(baseIndex + 2);
-    }
+    //     indexCache.push_back(baseIndex + 0);
+    //     indexCache.push_back(baseIndex + 3);
+    //     indexCache.push_back(baseIndex + 2);
+    // }
 };
