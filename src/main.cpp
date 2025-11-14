@@ -328,6 +328,9 @@ private:
             }
         }
 
+        // Initialize ChunkManager with texture IDs
+        editor.chunkManager = ChunkManager("world_data", editor.terrainGrassTextureId, editor.terrainDirtTextureId, editor.terrainStoneTextureId);
+
         createDescriptorSetLayout();
         createGraphicsPipeline();
         createUniformBuffers();
@@ -2071,10 +2074,26 @@ private:
             ImGui::InputInt("Chunks Y", &numChunksY);
             ImGui::InputInt("Chunks Z", &numChunksZ);
 
+            // Terrain Texture Selection
+            if (editor.textureManager && !editor.textureManager->getTextureNames().empty()) {
+                const std::vector<std::string>& textureNames = editor.textureManager->getTextureNames();
+                std::vector<const char*> c_str_textureNames;
+                for (const auto& name : textureNames) {
+                    c_str_textureNames.push_back(name.c_str());
+                }
+
+                ImGui::Text("Terrain Textures");
+                ImGui::Combo("Grass", &editor.terrainGrassTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                ImGui::Combo("Dirt", &editor.terrainDirtTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                ImGui::Combo("Stone", &editor.terrainStoneTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+            }
+
             if (ImGui::Button("Generate World")) {
                 editor.chunkManager.terrainGenerator.setSeed(seed);
                 editor.chunkManager.terrainGenerator.setFrequency(frequency);
                 editor.chunkManager.terrainGenerator.setOctaves(octaves);
+                // Update the terrain generator with selected textures
+                editor.chunkManager.terrainGenerator = TerrainGenerator(editor.terrainGrassTextureId, editor.terrainDirtTextureId, editor.terrainStoneTextureId);
                 editor.chunkManager.generateWorld(numChunksX, numChunksY, numChunksZ);
                 editor.chunkManager.updateLoadedChunks(camera.position3D);
             }

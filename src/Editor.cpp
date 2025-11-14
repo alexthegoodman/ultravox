@@ -38,6 +38,11 @@ public:
     int domeTextureId = 0;
     int domeDebrisTextureId = 0;
 
+    // Texture IDs for terrain generation
+    int terrainGrassTextureId = 0;
+    int terrainDirtTextureId = 0;
+    int terrainStoneTextureId = 0;
+
     Editor() {
         // LOG("Starting Editor");
         

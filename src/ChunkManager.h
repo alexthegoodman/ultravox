@@ -39,8 +39,9 @@ public:
     TerrainGenerator terrainGenerator;
     Octree<Chunk::PhysicsVoxelData> physicsOctree; 
 
-    ChunkManager(const std::string& worldPath = "world_data") 
-        : worldDataPath(worldPath),
+    ChunkManager(const std::string& worldPath = "world_data", int grassTex = 0, int dirtTex = 0, int stoneTex = 0) 
+        : terrainGenerator(grassTex, dirtTex, stoneTex),
+          worldDataPath(worldPath),
           loadRadius(3),
           unloadRadius(5),
           physicsOctree() { // Initialize Octree with a large enough bounds
