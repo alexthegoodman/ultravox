@@ -1,8 +1,11 @@
 #version 450
+#extension GL_EXT_nonuniform_qualifier : require
 
 layout(location = 0) in vec4 fragColor;
 layout(location = 1) in vec3 fragWorldPos;
 layout(location = 2) in vec3 fragNormal;
+layout(location = 3) in vec2 fragTexCoord; // New: Texture coordinates
+layout(location = 4) in float fragTextureId; // New: Input texture ID
 
 layout(location = 0) out vec4 outColor;
 
@@ -20,6 +23,8 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     int numLights;
     PointLight lights[MAX_LIGHTS];
 } ubo;
+
+layout(set = 0, binding = 1) uniform sampler2D texSamplers[]; // New: Array of texture samplers
 
 void main() {
     vec3 normal = normalize(fragNormal);
@@ -61,6 +66,9 @@ void main() {
         lighting += (diffuse + specular) * attenuation;
     }
 
-    vec3 result = (ambient + lighting) * fragColor.rgb;
-    outColor = vec4(result, fragColor.a);
+    // Sample the texture using the texture ID
+    vec4 texColor = texture(texSamplers[int(fragTextureId)], fragTexCoord);
+
+    vec3 result = (ambient + lighting) * texColor.rgb; // Use texture color
+    outColor = vec4(result, texColor.a); // Use texture alpha
 }

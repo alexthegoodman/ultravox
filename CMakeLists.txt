@@ -45,6 +45,8 @@ add_executable(${PROJECT_NAME}
     src/items/Apple.cpp
     src/items/Laser.cpp
     src/items/WorldItem.cpp
+    src/helpers.cpp
+    src/TextureManager.cpp
     # src/Camera3D.cpp
     # src/ChunkManager.cpp
     # other files currently included in main.cpp

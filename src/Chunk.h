@@ -32,9 +32,10 @@ public:
     struct VoxelData {
         glm::vec4 color;
         uint8_t type; // 0 = air, 1+ = solid types
+        int textureId; // Index of the texture to use for this voxel
         
-        VoxelData() : color(1.0f), type(0) {}
-        VoxelData(const glm::vec4& c, uint8_t t) : color(c), type(t) {}
+        VoxelData() : color(1.0f), type(0), textureId(0) {}
+        VoxelData(const glm::vec4& c, uint8_t t, int texID = 0) : color(c), type(t), textureId(texID) {}
     };
 
     // Physics data for a single voxel
@@ -169,12 +170,12 @@ public:
                     }
 
                     // Check each face
-                    if (!isSolid(x, y + 1, z)) addFace(pos, voxel.color, 0); // Top
-                    if (!isSolid(x, y - 1, z)) addFace(pos, voxel.color, 1); // Bottom
-                    if (!isSolid(x + 1, y, z)) addFace(pos, voxel.color, 2); // Right
-                    if (!isSolid(x - 1, y, z)) addFace(pos, voxel.color, 3); // Left
-                    if (!isSolid(x, y, z + 1)) addFace(pos, voxel.color, 4); // Front
-                    if (!isSolid(x, y, z - 1)) addFace(pos, voxel.color, 5); // Back
+                    if (!isSolid(x, y + 1, z)) addFace(pos, voxel.color, voxel.textureId, 0); // Top
+                    if (!isSolid(x, y - 1, z)) addFace(pos, voxel.color, voxel.textureId, 1); // Bottom
+                    if (!isSolid(x + 1, y, z)) addFace(pos, voxel.color, voxel.textureId, 2); // Right
+                    if (!isSolid(x - 1, y, z)) addFace(pos, voxel.color, voxel.textureId, 3); // Left
+                    if (!isSolid(x, y, z + 1)) addFace(pos, voxel.color, voxel.textureId, 4); // Front
+                    if (!isSolid(x, y, z - 1)) addFace(pos, voxel.color, voxel.textureId, 5); // Back
 
                     // if (!isSolid(x, y + 1, z)) addDoubleSidedFace(pos, voxel.color, 0); // Top
                     // if (!isSolid(x, y - 1, z)) addDoubleSidedFace(pos, voxel.color, 1); // Bottom
@@ -287,7 +288,10 @@ private:
                 
                 Vertex v;
                 v.position = p;
-                v.texCoords = glm::vec2(0.0f, 0.0f);
+                // Assign texture coordinates based on vertex index for a full texture map per face
+                if (i == 0 || i == 3) v.texCoords = glm::vec2(0.0f, 0.0f);
+                else if (i == 1 || i == 4) v.texCoords = glm::vec2(1.0f, 0.0f);
+                else if (i == 2 || i == 5) v.texCoords = glm::vec2(1.0f, 1.0f);
                 v.color = color;
                 v.gradientCoords = glm::vec2((p.x - pos.x + hw) / w, (p.y - pos.y + hh) / h);
                 v.objectType = 6.0f; // 6 = solid voxel
@@ -378,7 +382,7 @@ private:
     //     indexCache.push_back(baseIndex + 3);
     // }
 
-    void addFace(const glm::vec3& pos, const glm::vec4& color, int faceIndex) {
+    void addFace(const glm::vec3& pos, const glm::vec4& color, int textureId, int faceIndex) {
         uint32_t baseIndex = static_cast<uint32_t>(vertexCache.size());
         
         // Define face vertices based on direction
@@ -435,11 +439,16 @@ private:
         for (int i = 0; i < 4; ++i) {
             Vertex v;
             v.position = vertices[i];
-            v.texCoords = glm::vec2(0.0f);
+            // Assign texture coordinates based on vertex index for a full texture map per face
+            if (i == 0) v.texCoords = glm::vec2(0.0f, 0.0f);
+            else if (i == 1) v.texCoords = glm::vec2(0.0f, 1.0f);
+            else if (i == 2) v.texCoords = glm::vec2(1.0f, 1.0f);
+            else if (i == 3) v.texCoords = glm::vec2(1.0f, 0.0f);
             v.color = color;
             v.gradientCoords = glm::vec2(0.0f);
             v.objectType = 6.0f;
             v.normal = normal;
+            v.textureId = static_cast<float>(textureId); // Assign the texture ID
             vertexCache.push_back(v);
         }
         

@@ -33,6 +33,7 @@
 #include <map>
 #include <set>
 #include <glm/gtx/string_cast.hpp>
+#include <filesystem> // Required for directory_iterator
 
 #include <unordered_map>
 #include <utility>
@@ -56,6 +57,7 @@
 #include "items/WorldItem.h"
 #include "items/Apple.h"
 #include "items/Laser.h"
+#include "TextureManager.h"
 
 // Custom operator< for glm::vec3 to allow its use in std::map
 namespace glm {
@@ -76,7 +78,8 @@ const std::vector<const char*> validationLayers = {
 };
 
 const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    VK_KHR_MAINTENANCE3_EXTENSION_NAME // Required for GL_EXT_nonuniform_qualifier
 };
 
 #ifdef NDEBUG
@@ -220,6 +223,8 @@ private:
     VmaAllocator allocator;
     VkDescriptorPool imguiDescriptorPool;
 
+    TextureManager* textureManager;
+
     Editor editor;
     Camera3D camera;
     PhysicsSystem physicsSystem;
@@ -301,12 +306,9 @@ private:
         LOG("Initializing Render Pass");
         createRenderPass();
 
-        createDescriptorSetLayout();
-        createGraphicsPipeline();
-        
         createCommandPool();
 
-         LOG("Initializing Depth Resources");
+        LOG("Initializing Depth Resources");
         createDepthResources();
 
         createFramebuffers();
@@ -317,8 +319,17 @@ private:
 
         LOG("Continuing Vulkan Initialization...");
 
-        // LOG("MeshPushConstants size " + std::to_string(sizeof(MeshPushConstants)));
+        textureManager = new TextureManager(device, physicalDevice, commandPool, graphicsQueue);
+        editor.textureManager = textureManager; // Set the texture manager for the editor
+        // Load textures from the "textures" directory
+        for (const auto& entry : std::filesystem::directory_iterator("textures")) {
+            if (entry.is_regular_file()) {
+                textureManager->loadTexture(entry.path().string());
+            }
+        }
 
+        createDescriptorSetLayout();
+        createGraphicsPipeline();
         createUniformBuffers();
         createDescriptorPool();
         createDescriptorSets();
@@ -578,6 +589,10 @@ private:
 
         VkPhysicalDeviceFeatures deviceFeatures{};
 
+        VkPhysicalDeviceVulkan12Features features12{};
+        features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+        features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE; // Enable dynamic indexing
+
         VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
@@ -585,6 +600,7 @@ private:
         createInfo.pEnabledFeatures = &deviceFeatures;
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+        createInfo.pNext = &features12; // Chain the Vulkan 1.2 features struct
 
         if (enableValidationLayers) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -1296,10 +1312,18 @@ private:
         uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
 
+        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+        samplerLayoutBinding.binding = 1;
+        samplerLayoutBinding.descriptorCount = 1;
+        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        samplerLayoutBinding.pImmutableSamplers = nullptr;
+        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = 1;
-        layoutInfo.pBindings = &uboLayoutBinding;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
 
         if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout!");
@@ -1461,14 +1485,16 @@ private:
     }
 
     void createDescriptorPool() {
-        VkDescriptorPoolSize poolSize{};
-        poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+        std::array<VkDescriptorPoolSize, 2> poolSizes{};
+        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT); // Assuming one texture for now
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = 1;
-        poolInfo.pPoolSizes = &poolSize;
+        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+        poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
@@ -1495,16 +1521,30 @@ private:
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
-            VkWriteDescriptorSet descriptorWrite{};
-            descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrite.dstSet = descriptorSets[i];
-            descriptorWrite.dstBinding = 0;
-            descriptorWrite.dstArrayElement = 0;
-            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrite.descriptorCount = 1;
-            descriptorWrite.pBufferInfo = &bufferInfo;
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = textureManager->getTextureImageView(0); // Bind the first loaded texture
+            imageInfo.sampler = textureManager->getTextureSampler();
 
-            vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[0].dstSet = descriptorSets[i];
+            descriptorWrites[0].dstBinding = 0;
+            descriptorWrites[0].dstArrayElement = 0;
+            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[0].descriptorCount = 1;
+            descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[1].dstSet = descriptorSets[i];
+            descriptorWrites[1].dstBinding = 1;
+            descriptorWrites[1].dstArrayElement = 0;
+            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[1].descriptorCount = 1;
+            descriptorWrites[1].pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
     }
 
@@ -1813,7 +1853,7 @@ private:
 
                         if (editor.isPainting) {
                             // Add the voxel
-                            editor.chunkManager.setVoxelWorld(newVoxelPos, Chunk::VoxelData(glm::vec4(voxelColor[0], voxelColor[1], voxelColor[2], voxelColor[3]), 1)); // Red voxel
+                            editor.chunkManager.setVoxelWorld(newVoxelPos, Chunk::VoxelData(glm::vec4(voxelColor[0], voxelColor[1], voxelColor[2], voxelColor[3]), 1, editor.selectedTextureId)); // Red voxel
                             paintedVoxelsInStroke.insert(newVoxelPos);
                         } else if (editor.isPaintingComponent) {
                             if (editor.isPaintingComponentType == ComponentType::Tree) {
@@ -2063,6 +2103,19 @@ private:
 
             ImGui::ColorPicker4("Voxel Color", voxelColor, ImGuiColorEditFlags_NoInputs);
 
+            // Texture selection dropdown
+            if (editor.textureManager && !editor.textureManager->getTextureNames().empty()) {
+                const std::vector<std::string>& textureNames = editor.textureManager->getTextureNames();
+                std::vector<const char*> c_str_textureNames;
+                for (const auto& name : textureNames) {
+                    c_str_textureNames.push_back(name.c_str());
+                }
+
+                ImGui::Combo("Select Texture", &editor.selectedTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+            } else {
+                ImGui::Text("No textures loaded.");
+            }
+
             ImGui::Text("Active Physics Bodies %i", 
                         activePhysicsBodies.size());
 
@@ -2144,36 +2197,35 @@ private:
     }
 
     void cleanup() {
-        LOG("Starting cleanup");
+        LOG("Cleaning up VulkanEngine");
 
-        // Destroy all chunk buffers
-        for (auto const& [coord, bufferPair] : chunkVertexBuffers) {
-            vmaDestroyBuffer(allocator, bufferPair.first, bufferPair.second);
-        }
-        for (auto const& [coord, bufferPair] : chunkIndexBuffers) {
-            vmaDestroyBuffer(allocator, bufferPair.first, bufferPair.second);
-        }
-
-        destroyPlayerBuffers();
-        destroyItemBuffers();
-
-        LOG("Cleanup swapchain");
+        delete textureManager;
 
         cleanupSwapChain();
+
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vmaDestroyBuffer(allocator, uniformBuffers[i], uniformBuffersAllocations[i]);
         }
 
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+        destroyPlayerBuffers();
+        destroyItemBuffers();
 
-        // Cleanup ImGui
-        ImGui_ImplVulkan_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext();
+        for (auto const& [coord, buffers] : chunkVertexBuffers) {
+            vmaDestroyBuffer(allocator, buffers.first, buffers.second);
+        }
+        chunkVertexBuffers.clear();
 
-        vkDestroyDescriptorPool(device, imguiDescriptorPool, nullptr);
+        for (auto const& [coord, buffers] : chunkIndexBuffers) {
+            vmaDestroyBuffer(allocator, buffers.first, buffers.second);
+        }
+        chunkIndexBuffers.clear();
+
+        physicsSystem.shutdown();
+
+        vkDestroyRenderPass(device, renderPass, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -2185,25 +2237,18 @@ private:
 
         vmaDestroyAllocator(allocator);
 
-        vkDestroyRenderPass(device, renderPass, nullptr);
-
-        LOG("Shutdown physics");
-
-        // destroy here, not in class, to be centralized for now
-        if (editor.playerCharacter) {
-            physicsSystem.destroyCharacter(editor.playerCharacter->character);
-        }
-
-        physicsSystem.shutdown();
-
         vkDestroyDevice(device, nullptr);
-
         vkDestroySurfaceKHR(instance, surface, nullptr);
         vkDestroyInstance(instance, nullptr);
 
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+        vkDestroyDescriptorPool(device, imguiDescriptorPool, nullptr);
+
         glfwDestroyWindow(window);
         glfwTerminate();
-        LOG("Cleanup finished");
+        LOG("VulkanEngine cleaned up");
     }
 };
 

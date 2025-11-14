@@ -12,6 +12,7 @@ struct Vertex {
     glm::vec2 gradientCoords; // gradient u, v
     float objectType;         // corresponds to ObjectType enum
     glm::vec3 normal;         // x, y, z
+    float textureId;          // Index of the texture to use
 
     // Vertex binding description (for Vulkan)
     static VkVertexInputBindingDescription getBindingDescription() {
@@ -23,8 +24,8 @@ struct Vertex {
     }
 
     // Attribute descriptions (shader locations)
-    static std::array<VkVertexInputAttributeDescription, 6> getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 6> attributeDescriptions{};
+    static std::array<VkVertexInputAttributeDescription, 7> getAttributeDescriptions() {
+        std::array<VkVertexInputAttributeDescription, 7> attributeDescriptions{};
 
         // Position
         attributeDescriptions[0].binding = 0;
@@ -61,6 +62,12 @@ struct Vertex {
         attributeDescriptions[5].location = 5;
         attributeDescriptions[5].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[5].offset = offsetof(Vertex, normal);
+
+        // Texture ID
+        attributeDescriptions[6].binding = 0;
+        attributeDescriptions[6].location = 6;
+        attributeDescriptions[6].format = VK_FORMAT_R32_SFLOAT;
+        attributeDescriptions[6].offset = offsetof(Vertex, textureId);
 
         return attributeDescriptions;
     }

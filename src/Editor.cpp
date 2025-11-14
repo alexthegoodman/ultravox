@@ -6,6 +6,8 @@
 #include "PlayerCharacter.h"
 #include "Sphere.h"
 #include "Light.h"
+#include "TextureManager.h" // Include TextureManager header
+#include "types.h"
 
 #include <vector>
 #include <memory>
@@ -16,6 +18,7 @@ public:
     ChunkManager chunkManager;
     std::unique_ptr<PlayerCharacter> playerCharacter;
     std::vector<PointLight> lights;
+    TextureManager* textureManager = nullptr; // Pointer to the TextureManager
 
     // state
     bool isPlayingPreview = false;
@@ -24,6 +27,7 @@ public:
     ComponentType isPaintingComponentType = ComponentType::Tree;
     bool isPaintingItem = false;
     ItemType isPaintingItemType = ItemType::Apple; // defaults to Apple
+    int selectedTextureId = 0; // Index of the currently selected texture
 
     Editor() {
         // LOG("Starting Editor");

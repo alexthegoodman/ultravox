@@ -8,13 +8,21 @@
 #endif
 
 #include <glm/glm.hpp>
+#include <vulkan/vulkan.h>
 #include "Octree.h" // For Vector3 definition
+#include "Vertex.h"
+#include <vector>
+
+uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
+void createBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
 inline glm::vec2 toNDC(float x, float y, float width, float height) {
     float ndcX = (x / width) * 2.0f - 1.0f;
     float ndcY = -((y / height) * 2.0f - 1.0f);
     return { ndcX, ndcY };
 }
+
 
 inline glm::vec2 fromNDC(float ndcX, float ndcY, float width, float height) {
     float x = ((ndcX + 1.0f) / 2.0f) * width;
