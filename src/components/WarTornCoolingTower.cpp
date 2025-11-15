@@ -85,7 +85,6 @@ std::vector<VoxelInfo> WarTornCoolingTower::generate() const {
                 else                color = concrete;
 
                 int textureId = 0;
-                int roll = rand() % 100;
                 if (roll < 10)      textureId = scorchedTextureId;
                 else if (roll < 25) textureId = crackedTextureId;
                 else                textureId = concreteTextureId;

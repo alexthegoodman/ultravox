@@ -25,7 +25,6 @@ private:
     float thickness;
     float damageFactor;
     bool addBattlements;
-    int debrisCount;
 
     int debrisCount = 80;
     int stoneTextureId = 0;

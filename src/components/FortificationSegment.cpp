@@ -74,7 +74,6 @@ std::vector<VoxelInfo> FortificationSegment::generate() const {
                 else                color = stone;
 
                 int textureId = 0;
-                int roll = rand() % 100;
                 if (roll < 15)      textureId = crackTextureId;
                 else if (roll < 30) textureId = rubbleTextureId;
                 else                textureId = stoneTextureId;
