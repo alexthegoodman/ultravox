@@ -40,6 +40,7 @@ add_executable(${PROJECT_NAME}
     src/components/Tree.cpp
     src/components/House.cpp
     src/components/WarTornDome.cpp
+    src/components/WarTornCoolingTower.cpp
     src/items/Item.cpp
     src/items/Weapon.cpp
     src/items/Apple.cpp

@@ -54,6 +54,7 @@
 #include "components/Tree.h"
 #include "components/House.h"
 #include "components/WarTornDome.h"
+#include "components/WarTornCoolingTower.h"
 #include "items/WorldItem.h"
 #include "items/Apple.h"
 #include "items/Laser.h"
@@ -1931,22 +1932,29 @@ private:
 
                             if (editor.isPaintingComponent) {
                                 if (editor.isPaintingComponentType == ComponentType::Tree) {
-                                    Tree tree(newVoxelPos, 100, editor.treeTrunkTextureId, editor.treeLeavesTextureId);
+                                    Tree tree(newVoxelPos, 100, editor.componentTexture1Id, editor.componentTexture2Id);
                                     auto voxels = tree.generate();
                                     for (const auto& voxelInfo : voxels) {
                                         editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1, voxelInfo.textureId));
                                     }
                                     editor.isPaintingComponent = false;
                                 } else if (editor.isPaintingComponentType == ComponentType::House) {
-                                    House house(newVoxelPos, 6, 6, 4, editor.houseWallTextureId, editor.houseRoofTextureId, editor.houseDoorTextureId);
+                                    House house(newVoxelPos, 6, 6, 4, editor.componentTexture1Id, editor.componentTexture2Id, editor.componentTexture3Id);
                                     auto voxels = house.generate();
                                     for (const auto& voxelInfo : voxels) {
                                         editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1, voxelInfo.textureId));
                                     }
                                     editor.isPaintingComponent = false;
                                 } else if (editor.isPaintingComponentType == ComponentType::WarTornDome) {
-                                    WarTornDome dome(newVoxelPos, 48.0, 0.4f, 50, editor.domeTextureId, editor.domeDebrisTextureId);
+                                    WarTornDome dome(newVoxelPos, 48.0, 0.4f, 50, editor.componentTexture1Id, editor.componentTexture2Id);
                                     auto voxels = dome.generate();
+                                    for (const auto& voxelInfo : voxels) {
+                                        editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1, voxelInfo.textureId));
+                                    }
+                                    editor.isPaintingComponent = false;
+                                } else if (editor.isPaintingComponentType == ComponentType::WarTornCoolingTower) {
+                                    WarTornCoolingTower tower(newVoxelPos, 32.0f, 64, 0.4f, 100);
+                                    auto voxels = tower.generate();
                                     for (const auto& voxelInfo : voxels) {
                                         editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1, voxelInfo.textureId));
                                     }
@@ -2175,8 +2183,8 @@ private:
 
                 if (ImGui::CollapsingHeader("Trees")) {
                     ImGui::Text("Tree Textures");
-                    ImGui::Combo("Trunk", &editor.treeTrunkTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-                    ImGui::Combo("Leaves", &editor.treeLeavesTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Trunk", &editor.componentTexture1Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Leaves", &editor.componentTexture2Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
 
                     if (ImGui::Button("Add Tree")) {
                         editor.isPaintingComponent = true;
@@ -2186,9 +2194,9 @@ private:
 
                 if (ImGui::CollapsingHeader("Houses")) {
                     ImGui::Text("House Textures");
-                    ImGui::Combo("Walls", &editor.houseWallTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-                    ImGui::Combo("Roof", &editor.houseRoofTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-                    ImGui::Combo("Door", &editor.houseDoorTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Walls", &editor.componentTexture1Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Roof", &editor.componentTexture2Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Door", &editor.componentTexture3Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
 
                     if (ImGui::Button("Add House")) {
                         editor.isPaintingComponent = true;
@@ -2198,12 +2206,23 @@ private:
 
                 if (ImGui::CollapsingHeader("Domes")) {
                     ImGui::Text("Dome Textures");
-                    ImGui::Combo("Dome", &editor.domeTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-                    ImGui::Combo("Debris", &editor.domeDebrisTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Dome", &editor.componentTexture1Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Debris", &editor.componentTexture2Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
 
                     if (ImGui::Button("Add War Torn Dome")) {
                         editor.isPaintingComponent = true;
                         editor.isPaintingComponentType = ComponentType::WarTornDome;
+                    }
+                }
+
+                if (ImGui::CollapsingHeader("Nuclear Cooling Towers")) {
+                    ImGui::Text("Tower Textures");
+                    // ImGui::Combo("Dome", &editor.domeTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    // ImGui::Combo("Debris", &editor.domeDebrisTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+
+                    if (ImGui::Button("Add War Torn Cooling Tower")) {
+                        editor.isPaintingComponent = true;
+                        editor.isPaintingComponentType = ComponentType::WarTornCoolingTower;
                     }
                 }
             }

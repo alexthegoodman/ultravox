@@ -30,13 +30,18 @@ public:
     int selectedTextureId = 0; // Index of the currently selected texture
 
     // Texture IDs for components
-    int houseWallTextureId = 0;
-    int houseRoofTextureId = 0;
-    int houseDoorTextureId = 0;
-    int treeTrunkTextureId = 0;
-    int treeLeavesTextureId = 0;
-    int domeTextureId = 0;
-    int domeDebrisTextureId = 0;
+    // int houseWallTextureId = 0;
+    // int houseRoofTextureId = 0;
+    // int houseDoorTextureId = 0;
+    // int treeTrunkTextureId = 0;
+    // int treeLeavesTextureId = 0;
+    // int domeTextureId = 0;
+    // int domeDebrisTextureId = 0;
+
+    int componentTexture1Id = 0;
+    int componentTexture2Id = 0;
+    int componentTexture3Id = 0;
+    int componentTexture4Id = 0;
 
     // Texture IDs for terrain generation
     int terrainGrassTextureId = 0;
