@@ -97,6 +97,11 @@ public:
         position3D = target + direction * zoomValue;
     }
 
+    void updateZoomFromSlider2(float zoomDelta) {
+        glm::vec3 viewDirection = glm::normalize(target - position3D); // Looking direction
+        position3D += viewDirection * zoomDelta; // Move forward or backward
+    }
+
     // Get current pitch in degrees
     float getPitch() const {
         // Extract pitch from quaternion without converting to Euler

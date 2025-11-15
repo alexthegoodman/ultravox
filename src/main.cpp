@@ -1953,7 +1953,7 @@ private:
                                     }
                                     editor.isPaintingComponent = false;
                                 } else if (editor.isPaintingComponentType == ComponentType::WarTornCoolingTower) {
-                                    WarTornCoolingTower tower(newVoxelPos, 32.0f, 64, 0.4f, 100, editor.componentTexture1Id, editor.componentTexture2Id, editor.componentTexture3Id, editor.componentTexture4Id);
+                                    WarTornCoolingTower tower(newVoxelPos, 24.0f, 48, 0.4f, 100, editor.componentTexture1Id, editor.componentTexture2Id, editor.componentTexture3Id, editor.componentTexture4Id);
                                     auto voxels = tower.generate();
                                     for (const auto& voxelInfo : voxels) {
                                         editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1, voxelInfo.textureId));
@@ -2044,8 +2044,16 @@ private:
             ImGui::SliderFloat("Pitch", &currentPitch, -89.0f, 89.0f);
             ImGui::SliderFloat("Yaw", &currentYaw, -180.0f, 180.0f);
             // ImGui::SliderFloat("Zoom", &camera.zoom, 0.1f, 25.0f);
-            if (ImGui::SliderFloat("Zoom", &camera.zoom, 1.0f, 200.0f)) {
-                camera.updateZoomFromSlider(camera.zoom);
+            // if (ImGui::SliderFloat("Zoom", &camera.zoom, 1.0f, 200.0f)) {
+            //     camera.updateZoomFromSlider(camera.zoom);
+            // }
+
+            // Use delta from previous value
+            static float lastZoom = 200.0f; // Initialize to slider's starting value
+            if (ImGui::SliderFloat("Zoom", &camera.zoom, -200.0f, 200.0f)) {
+                float delta = camera.zoom - lastZoom;
+                camera.updateZoomFromSlider2(delta);
+                lastZoom = camera.zoom;
             }
 
 
@@ -2217,8 +2225,10 @@ private:
 
                 if (ImGui::CollapsingHeader("Nuclear Cooling Towers")) {
                     ImGui::Text("Tower Textures");
-                    // ImGui::Combo("Dome", &editor.domeTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-                    // ImGui::Combo("Debris", &editor.domeDebrisTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Concrete", &editor.componentTexture1Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Scorched", &editor.componentTexture2Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Cracked", &editor.componentTexture3Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Debris", &editor.componentTexture4Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
 
                     if (ImGui::Button("Add War Torn Cooling Tower")) {
                         editor.isPaintingComponent = true;

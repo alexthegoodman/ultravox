@@ -52,8 +52,8 @@ public:
         // LOG("Starting Editor");
         
         // editor settings allow for more to visible
-        chunkManager.setLoadRadius(4);
-        chunkManager.setUnloadRadius(8);
+        chunkManager.setLoadRadius(8);
+        chunkManager.setUnloadRadius(12);
     }
 
     void startPlayingPreview() {
