@@ -1,5 +1,5 @@
 #include "WarTornCoolingTower.h"
-#include "Chunk.h"
+#include "../Chunk.h"
 #include <cstdlib>
 #include <ctime>
 #include <cmath>

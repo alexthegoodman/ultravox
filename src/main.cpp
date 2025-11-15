@@ -1953,7 +1953,7 @@ private:
                                     }
                                     editor.isPaintingComponent = false;
                                 } else if (editor.isPaintingComponentType == ComponentType::WarTornCoolingTower) {
-                                    WarTornCoolingTower tower(newVoxelPos, 32.0f, 64, 0.4f, 100);
+                                    WarTornCoolingTower tower(newVoxelPos, 32.0f, 64, 0.4f, 100, editor.componentTexture1Id, editor.componentTexture2Id, editor.componentTexture3Id, editor.componentTexture4Id);
                                     auto voxels = tower.generate();
                                     for (const auto& voxelInfo : voxels) {
                                         editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1, voxelInfo.textureId));
