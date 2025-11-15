@@ -283,7 +283,7 @@ private:
         LOG("Initializing window");
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan Engine", nullptr, nullptr);
+        window = glfwCreateWindow(WIDTH, HEIGHT, "Ultravox", nullptr, nullptr);
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
         LOG("Window initialized");
@@ -2097,11 +2097,6 @@ private:
                 ImGui::End();
             }
 
-            // Example ImGui window
-            ImGui::Begin("Vulkan Engine");
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 
-                        1000.0f / ImGui::GetIO().Framerate, 
-                        ImGui::GetIO().Framerate);
             ImGui::Begin("Terrain Generation");
 
             static int seed = 1337;
@@ -2144,87 +2139,10 @@ private:
 
             ImGui::End();
 
-            // Component Texture Selection
-            if (editor.textureManager && !editor.textureManager->getTextureNames().empty()) {
-                const std::vector<std::string>& textureNames = editor.textureManager->getTextureNames();
-                std::vector<const char*> c_str_textureNames;
-                for (const auto& name : textureNames) {
-                    c_str_textureNames.push_back(name.c_str());
-                }
-
-                ImGui::Text("Tree Textures");
-                ImGui::Combo("Trunk", &editor.treeTrunkTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-                ImGui::Combo("Leaves", &editor.treeLeavesTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-
-                ImGui::Text("House Textures");
-                ImGui::Combo("Walls", &editor.houseWallTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-                ImGui::Combo("Roof", &editor.houseRoofTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-                ImGui::Combo("Door", &editor.houseDoorTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-
-                ImGui::Text("Dome Textures");
-                ImGui::Combo("Dome", &editor.domeTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-                ImGui::Combo("Debris", &editor.domeDebrisTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-            }
-
-            if (ImGui::Button("Add Tree")) {
-                editor.isPaintingComponent = true;
-                editor.isPaintingComponentType = ComponentType::Tree;
-            }
-
-            if (ImGui::Button("Add House")) {
-                editor.isPaintingComponent = true;
-                editor.isPaintingComponentType = ComponentType::House;
-            }
-
-            if (ImGui::Button("Add War Torn Dome")) {
-                editor.isPaintingComponent = true;
-                editor.isPaintingComponentType = ComponentType::WarTornDome;
-            }
-
-            if (ImGui::Button("Add Point Light")) {
-                if (editor.lights.size() < MAX_LIGHTS) {
-                    PointLight newLight;
-                    newLight.position = camera.position3D;
-                    newLight.color = glm::vec3(1.0f, 1.0f, 1.0f);
-                    editor.lights.push_back(newLight);
-                }
-            }
-
-            // if (ImGui::Button("Inspect Landscape Data")) {
-            //     editor.chunkManager.exportChunkDataToTextFile("world_data/chunk_0_0_0.dat", "chunk_0_0_0.txt");
-            // }
-
-            if (ImGui::Button("Paint Voxels")) {
-                editor.isPainting = !editor.isPainting;
-            }
-            ImGui::Text(editor.isPainting ? "Painting enabled" : "Painting disabled");
-
-            if (ImGui::Button("Add Apple")) {
-                // worldItems.emplace_back(std::make_unique<Apple>(), glm::vec3(20.0f, 15.0f, 20.0f));
-                editor.isPaintingItemType = ItemType::Apple;
-                editor.isPaintingItem = true;
-            }
-
-            if (ImGui::Button("Add Laser Gun")) {
-                // worldItems.emplace_back(std::make_unique<Laser>(), glm::vec3(22.0f, 15.0f, 20.0f));
-                editor.isPaintingItemType = ItemType::LaserGun;
-                editor.isPaintingItem = true;
-            }
-
-            ImGui::ColorPicker4("Voxel Color", voxelColor, ImGuiColorEditFlags_NoInputs);
-
-            // Texture selection dropdown
-            if (editor.textureManager && !editor.textureManager->getTextureNames().empty()) {
-                const std::vector<std::string>& textureNames = editor.textureManager->getTextureNames();
-                std::vector<const char*> c_str_textureNames;
-                for (const auto& name : textureNames) {
-                    c_str_textureNames.push_back(name.c_str());
-                }
-
-                ImGui::Combo("Select Texture", &editor.selectedTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
-            } else {
-                ImGui::Text("No textures loaded.");
-            }
+            ImGui::Begin("Engine");
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 
+                        1000.0f / ImGui::GetIO().Framerate, 
+                        ImGui::GetIO().Framerate);
 
             ImGui::Text("Active Physics Bodies %i", 
                         activePhysicsBodies.size());
@@ -2244,6 +2162,96 @@ private:
                         camera.fov = glm::radians(30.0f);
                         editor.startPlayingPreview();
                     }
+                }
+            }
+
+            // Component Texture Selection
+            if (editor.textureManager && !editor.textureManager->getTextureNames().empty()) {
+                const std::vector<std::string>& textureNames = editor.textureManager->getTextureNames();
+                std::vector<const char*> c_str_textureNames;
+                for (const auto& name : textureNames) {
+                    c_str_textureNames.push_back(name.c_str());
+                }
+
+                if (ImGui::CollapsingHeader("Trees")) {
+                    ImGui::Text("Tree Textures");
+                    ImGui::Combo("Trunk", &editor.treeTrunkTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Leaves", &editor.treeLeavesTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+
+                    if (ImGui::Button("Add Tree")) {
+                        editor.isPaintingComponent = true;
+                        editor.isPaintingComponentType = ComponentType::Tree;
+                    }
+                }
+
+                if (ImGui::CollapsingHeader("Houses")) {
+                    ImGui::Text("House Textures");
+                    ImGui::Combo("Walls", &editor.houseWallTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Roof", &editor.houseRoofTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Door", &editor.houseDoorTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+
+                    if (ImGui::Button("Add House")) {
+                        editor.isPaintingComponent = true;
+                        editor.isPaintingComponentType = ComponentType::House;
+                    }
+                }
+
+                if (ImGui::CollapsingHeader("Domes")) {
+                    ImGui::Text("Dome Textures");
+                    ImGui::Combo("Dome", &editor.domeTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Debris", &editor.domeDebrisTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+
+                    if (ImGui::Button("Add War Torn Dome")) {
+                        editor.isPaintingComponent = true;
+                        editor.isPaintingComponentType = ComponentType::WarTornDome;
+                    }
+                }
+            }
+
+            if (ImGui::Button("Add Point Light")) {
+                if (editor.lights.size() < MAX_LIGHTS) {
+                    PointLight newLight;
+                    newLight.position = camera.position3D;
+                    newLight.color = glm::vec3(1.0f, 1.0f, 1.0f);
+                    editor.lights.push_back(newLight);
+                }
+            }
+
+            // if (ImGui::Button("Inspect Landscape Data")) {
+            //     editor.chunkManager.exportChunkDataToTextFile("world_data/chunk_0_0_0.dat", "chunk_0_0_0.txt");
+            // }
+
+            if (ImGui::CollapsingHeader("Add Items / Weapons / Armor")) {
+                if (ImGui::Button("Add Apple")) {
+                    editor.isPaintingItemType = ItemType::Apple;
+                    editor.isPaintingItem = true;
+                }
+
+                if (ImGui::Button("Add Laser Gun")) {
+                    editor.isPaintingItemType = ItemType::LaserGun;
+                    editor.isPaintingItem = true;
+                }
+            }
+
+            if (ImGui::CollapsingHeader("Paint Voxels")) {
+                if (ImGui::Button("Begin Paint")) {
+                    editor.isPainting = !editor.isPainting;
+                }
+                ImGui::Text(editor.isPainting ? "Painting enabled" : "Painting disabled");
+
+                ImGui::ColorPicker4("Voxel Color", voxelColor, ImGuiColorEditFlags_NoInputs);
+
+                // Texture selection dropdown
+                if (editor.textureManager && !editor.textureManager->getTextureNames().empty()) {
+                    const std::vector<std::string>& textureNames = editor.textureManager->getTextureNames();
+                    std::vector<const char*> c_str_textureNames;
+                    for (const auto& name : textureNames) {
+                        c_str_textureNames.push_back(name.c_str());
+                    }
+
+                    ImGui::Combo("Select Texture", &editor.selectedTextureId, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                } else {
+                    ImGui::Text("No textures loaded.");
                 }
             }
             
