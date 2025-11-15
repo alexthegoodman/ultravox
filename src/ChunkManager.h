@@ -648,8 +648,8 @@ PhysicsSystem::RayCastResult ChunkManager::castRay(const glm::vec3& rayOrigin, c
         }
     }
 
-    // Max distance to check (e.g., 100 units)
-    float maxRayDistance = 100.0f;
+    // Max distance to check
+    float maxRayDistance = 500.0f;
     float currentRayDistance = 0.0f;
 
     while (currentRayDistance < maxRayDistance) {

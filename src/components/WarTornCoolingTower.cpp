@@ -84,8 +84,14 @@ std::vector<VoxelInfo> WarTornCoolingTower::generate() const {
                 else if (roll < 25) color = cracked;
                 else                color = concrete;
 
+                int textureId = 0;
+                int roll = rand() % 100;
+                if (roll < 10)      textureId = scorchedTextureId;
+                else if (roll < 25) textureId = crackedTextureId;
+                else                textureId = concreteTextureId;
+
                 glm::vec3 pos = basePosition + glm::vec3(x, y, z) * voxel;
-                voxels.push_back({pos, color});
+                voxels.push_back({pos, color, textureId});
             }
         }
     }
@@ -104,7 +110,7 @@ std::vector<VoxelInfo> WarTornCoolingTower::generate() const {
                 continue;
 
             glm::vec3 pos = basePosition + glm::vec3(x, lipY, z) * voxel;
-            voxels.push_back({pos, concrete});
+            voxels.push_back({pos, concrete, concreteTextureId});
         }
     }
 
@@ -140,7 +146,7 @@ std::vector<VoxelInfo> WarTornCoolingTower::generate() const {
                     if (rand() % 100 < 30) continue;
 
                     glm::vec3 pos = base + glm::vec3(dx, dy, dz) * voxel;
-                    voxels.push_back({pos, debrisColor});
+                    voxels.push_back({pos, debrisColor, debrisTextureId});
                 }
     }
 

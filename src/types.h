@@ -32,5 +32,6 @@ enum class ComponentType : uint32_t {
     Tree = 0,
     House = 1,
     WarTornDome = 2,
-    WarTornCoolingTower = 3
+    WarTornCoolingTower = 3,
+    Fortification = 4
 };

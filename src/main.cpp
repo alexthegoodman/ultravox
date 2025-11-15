@@ -55,6 +55,7 @@
 #include "components/House.h"
 #include "components/WarTornDome.h"
 #include "components/WarTornCoolingTower.h"
+#include "components/FortificationSegment.h"
 #include "items/WorldItem.h"
 #include "items/Apple.h"
 #include "items/Laser.h"
@@ -1946,15 +1947,23 @@ private:
                                     }
                                     editor.isPaintingComponent = false;
                                 } else if (editor.isPaintingComponentType == ComponentType::WarTornDome) {
-                                    WarTornDome dome(newVoxelPos, 48.0, 0.4f, 50, editor.componentTexture1Id, editor.componentTexture2Id);
+                                    WarTornDome dome(newVoxelPos, 48.0, 0.6f, 50, editor.componentTexture1Id, editor.componentTexture2Id);
                                     auto voxels = dome.generate();
                                     for (const auto& voxelInfo : voxels) {
                                         editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1, voxelInfo.textureId));
                                     }
                                     editor.isPaintingComponent = false;
                                 } else if (editor.isPaintingComponentType == ComponentType::WarTornCoolingTower) {
-                                    WarTornCoolingTower tower(newVoxelPos, 24.0f, 48, 0.4f, 100, editor.componentTexture1Id, editor.componentTexture2Id, editor.componentTexture3Id, editor.componentTexture4Id);
+                                    WarTornCoolingTower tower(newVoxelPos, 24.0f, 48, 0.6f, 50, editor.componentTexture1Id, editor.componentTexture2Id, editor.componentTexture3Id, editor.componentTexture4Id);
                                     auto voxels = tower.generate();
+                                    for (const auto& voxelInfo : voxels) {
+                                        editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1, voxelInfo.textureId));
+                                    }
+                                    editor.isPaintingComponent = false;
+                                } else if (editor.isPaintingComponentType == ComponentType::Fortification) {
+                                    glm::vec3 endPos = newVoxelPos + glm::vec3(10.0, 0.0, 0.0);
+                                    FortificationSegment fortification(newVoxelPos, endPos, 10.0f, 2, 0.3f, true, 40, editor.componentTexture1Id, editor.componentTexture2Id, editor.componentTexture3Id);
+                                    auto voxels = fortification.generate();
                                     for (const auto& voxelInfo : voxels) {
                                         editor.chunkManager.setVoxelWorld(voxelInfo.position, Chunk::VoxelData(voxelInfo.color, 1, voxelInfo.textureId));
                                     }
@@ -2233,6 +2242,18 @@ private:
                     if (ImGui::Button("Add War Torn Cooling Tower")) {
                         editor.isPaintingComponent = true;
                         editor.isPaintingComponentType = ComponentType::WarTornCoolingTower;
+                    }
+                }
+
+                if (ImGui::CollapsingHeader("Fortifications")) {
+                    ImGui::Text("Fortification Textures");
+                    ImGui::Combo("Stone", &editor.componentTexture1Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Rubble", &editor.componentTexture2Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+                    ImGui::Combo("Crack", &editor.componentTexture3Id, c_str_textureNames.data(), static_cast<int>(c_str_textureNames.size()));
+
+                    if (ImGui::Button("Add Fortification")) {
+                        editor.isPaintingComponent = true;
+                        editor.isPaintingComponentType = ComponentType::Fortification;
                     }
                 }
             }
